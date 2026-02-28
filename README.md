@@ -1,12 +1,12 @@
 ## 2ODD Annotator
 
-The 2ODD Annotator is a bioinformatics helper package for identifying putative 2‑oxoglutarate/Fe(II)‑dependent dioxygenases (2ODDs) in plant proteomes based on sequence similarity and phylogenetic grouping.
+The 2ODD Annotator is a bioinformatics helper package for identifying putative 2‑oxoglutarate/Fe(II)‑dependent dioxygenases (2ODD) in plant proteomes based on sequence similarity and phylogenetic grouping.
 
 It provides two services:
 
 1. **Sequence‑similarity filtering** of input plant proteomes for gene sequences with significant 2ODD similarity. There are two approaches for this:
-        - BLASTP‑based filtering (`filter_seq_sim.blast`)
-        - HMMER‑based filtering using an HMM profile (`filter_seq_sim.hmmer`)
+        - BLASTP‑based filtering (`filter.blast`)
+        - HMMER‑based filtering using an HMM profile (`filter.hmmer`)
 
         Both filters work on protein FASTA files and can process either a single file or recursively walk a directory of FASTA files.
 
@@ -20,8 +20,8 @@ Requirements:
 
 - Python ≥ 3.13
 - A Unix‑like environment (Linux or macOS) where BLAST+ and HMMER are installed and available on the command line:
-    - `blastp` (from BLAST+) is used in `filter_seq_sim.blast.run_blastp`.
-    - `hmmsearch` (from HMMER 3) is used in `filter_seq_sim.hmmer.run_hmmsearch`.
+    - `blastp` (from BLAST+) is used in `filter.blast.run_blastp`.
+    - `hmmsearch` (from HMMER 3) is used in `filter.hmmer.run_hmmsearch`.
 
 Make sure these binaries are available on your `PATH`, e.g.:
 ```bash
@@ -42,8 +42,8 @@ Python dependencies are managed via the project’s `pyproject.toml`. At minimum
 ### Using uv (recommended for development)
 
 ```
-git clone https://github.com/michelleAlexan/2ODD_annotator.git
-cd 2ODD_annotator
+git clone https://github.com/michelleAlexan/two_odd_annotator.git
+cd two_odd_annotator
 uv sync
 ```
 
@@ -52,8 +52,8 @@ uv sync
 In a fresh virtual environment:
 
 ```
-git clone https://github.com/michelleAlexan/2ODD_annotator.git
-cd 2ODD_annotator
+git clone https://github.com/michelleAlexan/two_odd_annotator.git
+cd two_odd_annotator
 pip install -e .
 ```
 
@@ -62,7 +62,7 @@ pip install -e .
 
 ## Configuration
 
-Both BLAST and HMMER workflows are driven by a YAML configuration file, for example `configs/filter_seq_sim.yml`.
+Both BLAST and HMMER workflows are driven by a YAML configuration file, for example `configs/filter.yml`.
 
 ### BLAST configuration
 
@@ -70,7 +70,7 @@ The BLAST‑based filter expects (at minimum) keys like:
 
 ```yaml
 input: path/to/proteomes_or_fasta
-output_dir: results/filter_seq_sim
+output_dir: results/filter
 reuse_existing: true
 
 tools:
@@ -91,7 +91,7 @@ The HMMER‑based filter expects (at minimum):
 
 ```yaml
 input: path/to/proteomes_or_fasta
-output_dir: results/filter_seq_sim_hmmer
+output_dir: results/filter
 reuse_existing: true
 
 tools:
@@ -112,9 +112,9 @@ Typical usage is to load your YAML configuration and call either the BLAST or HM
 ### BLASTP‑based sequence similarity filter
 
 ```python
-from 2odd_annotator.filter_seq_sim import blast
+from two_odd_annotator.filter import blast
 
-config = blast.load_config("configs/filter_seq_sim.yml")
+config = blast.load_config("configs/filter.yml")
 
 input_path = config["input"]
 if os.path.isfile(input_path):
@@ -130,14 +130,14 @@ This will:
 - Write:
     - `blast_results.tsv` – raw BLAST tabular output.
     - `blast_filtered_hits.csv` – filtered hits table.
-    - `filter_seq_sim_blast.fasta` – FASTA sequences that passed the thresholds.
+    - `filter_blast.fasta` – FASTA sequences that passed the thresholds.
 
 ### HMMER‑based sequence similarity filter
 
 ```python
-from 2odd_annotator.filter_seq_sim import hmmer
+from two_odd_annotator.filter import hmmer
 
-config = hmmer.load_config("configs/filter_seq_sim.yml")
+config = hmmer.load_config("configs/filter.yml")
 
 input_path = config["input"]
 if os.path.isfile(input_path):
@@ -154,7 +154,7 @@ This will:
 - Write:
     - `hmmer2ODD_hits.out` – raw hmmsearch text output.
     - `hmmer2ODD_hits.csv` – parsed table of hits.
-    - `filter_seq_sim_hmmer.fasta` – FASTA of sequences with accepted HMMER hits.
+    - `filter_hmmer.fasta` – FASTA of sequences with accepted HMMER hits.
 
 When `reuse_existing` is set to `true` in the config, both pipelines will skip recomputation for FASTA files where all expected output files already exist.
 

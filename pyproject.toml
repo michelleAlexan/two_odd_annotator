@@ -1,7 +1,7 @@
 [project]
-name = "2odd-annotator"
+name = "two-odd-annotator"
 version = "0.1.0"
-description = "Add your description here"
+description = "Automatic annotation of plant protein sequences to 2‑oxoglutarate/Fe(II)‑dependent dioxygenases (2ODD) functionality"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

@@ -250,7 +250,7 @@ def process_directory(input_dir, config):
 if __name__ == "__main__":
     import time
 
-    config = load_config("/Users/michellealexander/projects/FALGs/configs/filter_seq_sim.yml")
+    config = load_config("/Users/michellealexander/projects/FALGs/configs/filter.yml")
     input_path = config["input"]
 
     start_time = time.time()
