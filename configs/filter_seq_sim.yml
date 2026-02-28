@@ -1,0 +1,19 @@
+input: "/Users/michellealexander/Documents/FALGs_test_data/"
+output_dir: "/Users/michellealexander/Documents/test_FALGs/"
+keep_logs: true
+reuse_existing: true # skip re-running BLAST or filtering if output files are already present
+tools:
+  blast:
+    reference_db: "/Users/michellealexander/projects/FALGs/data/char_2ODDs/blast_ref_db/2ODD_ref_db"
+    threads: 8
+    thresholds:
+      evalue: 1e-5
+      pident: 15.0     # percent identity cutoff
+      length: 80       # minimum alignment length
+      bitscore: 40       # minimum bitscore
+      num_hits: 100      # number of hits per query
+
+  hmmer:
+    domain_model: "/Users/michellealexander/projects/FALGs/data/char_2ODDs/2ODD_domain.hmm"
+    
+

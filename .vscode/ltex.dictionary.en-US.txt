@@ -1,0 +1,3 @@
+FASTA
+HMMER‑based
+BLASTP‑based
