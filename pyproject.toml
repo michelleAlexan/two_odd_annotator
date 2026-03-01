@@ -3,8 +3,14 @@ name = "two-odd-annotator"
 version = "0.1.0"
 description = "Automatic annotation of plant protein sequences to 2‑oxoglutarate/Fe(II)‑dependent dioxygenases (2ODD) functionality"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 dependencies = [
+    "bio-tools",
+    "biopython>=1.86",
+    "ete4>=4.4.0",
     "pandas>=3.0.1",
     "pyyaml>=6.0.3",
 ]
+
+[tool.uv.sources]
+bio-tools = { path = "../bio_tools" }
