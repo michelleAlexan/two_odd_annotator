@@ -56,7 +56,7 @@ def run_alignment(
 ) -> pd.DataFrame:
     """
     Run either DIAMOND or BLASTP for a single input FASTA file
-    and return the filtered results as a DataFrame.
+    and return the pre-filtered results as a DataFrame.
     """
 
     os.makedirs(output_dir, exist_ok=True)
@@ -267,7 +267,7 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
 # =============================================================================
 
 def run_single_file(input_path: Path|str, output_base_dir: Path|str, config: dict, method: str, logfile_path: str) -> None:
-    """ Run the full filtering pipeline for a single input FASTA file.
+    """ Run the full sequence similarity filtering pipeline for a single input FASTA file.
     This is the core function that processes one FASTA file, runs DIAMOND or HMMER or BLASTP filtering, and handles metadata updates. 
     It is called by the main CLI function for each file found in the input path.
     """
@@ -323,14 +323,14 @@ def run(input_path, output_dir, config_path, method):
 # =============================================================================
 
 def main_cli(argv=None):
-    """CLI entry point for the filter pipeline.
+    """CLI entry point for the prefilter pipeline based on sequence similarity.
 
     This orchestrates DIAMOND or BLASTP or HMMER filtering for one or many
     FASTA files and handles logging and tax ID mapping.
     """
 
     parser = argparse.ArgumentParser(
-        description="Filter plant protein FASTA files for 2ODD candidates."
+        description="Pre-filter plant protein FASTA files for 2ODD candidates."
     )
 
     parser.add_argument("--input-path", required=True, help="Path to an input FASTA file or a directory containing plant protein FASTA files.")
@@ -340,7 +340,7 @@ def main_cli(argv=None):
         "--method",
         choices=["diamond", "blastp", "hmmer"],
         default="diamond",
-        help="Which filtering method to run.",
+        help="Which pre-filtering method to run.",
     )
 
     args = parser.parse_args(argv)
