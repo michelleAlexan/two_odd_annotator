@@ -22,23 +22,23 @@ def load_config(path: str | Path) -> dict[str, Any]:
     return data or {}
 
 
-def write_metadata(output_dir: str | Path, metadata: dict[str, Any]) -> Path:
-    """Write metadata dict as YAML into the given directory.
+def write_metadata(output_path: Path, metadata: dict[str, Any]) -> Path:
+    """Write metadata dict as YAML into the given path.
 
     Returns
     -------
     Path
         Path to the written metadata file.
     """
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_path.is_dir():
+        output_path = output_path / METADATA_FILENAME
+    else:
+        output_path = Path(output_path)
 
-    meta_path = output_dir / METADATA_FILENAME
-
-    with meta_path.open("w") as f:
+    with output_path.open("w") as f:
         yaml.safe_dump(metadata, f, sort_keys=False)
 
-    return meta_path
+    return output_path
 
 
 def load_metadata(path: str | Path) -> dict[str, Any]:

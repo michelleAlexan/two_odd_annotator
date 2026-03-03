@@ -16,7 +16,7 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def init_log(output_dir: str) -> Path:
+def init_log(output_dir: str, logfile_name: str = LOG_FILENAME) -> Path:
     """Create (or append to) a simple text log file.
 
     - Ensures the output directory exists.
@@ -27,7 +27,7 @@ def init_log(output_dir: str) -> Path:
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    log_path = out_dir / LOG_FILENAME
+    log_path = out_dir / logfile_name
     if log_path.is_file():
         # If the log already exists, it is overwritten to start fresh for each run, 
         # but you could change this behavior to keep a cumulative log.
@@ -40,10 +40,10 @@ def init_log(output_dir: str) -> Path:
     return log_path
 
 
-def log_line(output_dir: str, message: str) -> None:
+def log_line(logfile_path: str, message: str) -> None:
     """Append a timestamped message to the run log in output_dir."""
 
-    log_path = Path(output_dir) / LOG_FILENAME
+    log_path = Path(logfile_path)
     with log_path.open("a") as f:
         f.write(f"{_now_iso()} - {message}\n")
     print(message)  # Also print to console for real-time feedback

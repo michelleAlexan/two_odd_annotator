@@ -17,34 +17,51 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def infer_species_from_dir_name(dir_name: str) -> str:
-    """Infer species name from an input directory name.
+def infer_species_from_file_name(file_name: Path) -> str:
+    """Infer species name from an input FASTA file name.
 
-    Assumes the directory is named according to the Latin species name, e.g.
-    "Solanum_tuberosum" -> "Solanum tuberosum".
+    Assumes the file is named according to the Latin species name, e.g.
+    "Solanum_tuberosum.fasta" or
+    "Solanum_tuberosum.pep.fasta"
+    -> "Solanum tuberosum".
     """
 
-    stem = Path(dir_name).stem
-    # Replace underscores with spaces and title-case words
+    file_name = Path(file_name)
+
+    stem = file_name.name
+    while True:
+        stem_path = Path(stem)
+        if stem_path.suffix == "":
+            break
+        stem = stem_path.stem
+
+    # Replace underscores with spaces
     name = stem.replace("_", " ").strip()
 
-    if len(name.split()) < 2:
-        raise ValueError(f"Could not infer species name from directory name: {dir_name}")
+    parts = name.split()
+    if len(parts) < 2:
+        raise ValueError(f"Could not infer species name from file: {file_name}")
 
     return name
 
 
-def create_metadata(dir_path: str) -> None:
-    """Write the scientific species name and the corresponding tax_id as a metadata YAML into the given directory."""
-    
-    inferred_species = infer_species_from_dir_name(dir_path)
-    tax_id = map_scientific_notation_to_tax_id(inferred_species, raise_on_error=True)
+def init_subdir(input_fasta_file: Path, output_base_dir: Path) -> None:
+    """it is assumed that the input fasta file is named according to the Latin species name.
+    For downstream processing, the tax id needs to be inferred from the filename and stored in the metadata."""
+    inferred_species = infer_species_from_file_name(input_fasta_file)
+    tax_id_dict = map_scientific_notation_to_tax_id(inferred_species, raise_on_error=True)
+    inferred_species, tax_id = list(tax_id_dict.keys())[0], list(tax_id_dict.values())[0]
     metadata = {
         "creation_timestamp": _now_iso(),
         "species": inferred_species,
         "tax_id": tax_id,
     }
-    write_metadata(dir_path, metadata)
+    # create a subdirectory named as the scientific name of the species
+    subdir = output_base_dir / inferred_species.replace(" ", "_")
+    subdir.mkdir(parents=True, exist_ok=True)
+
+    write_metadata(output_path=subdir / METADATA_FILENAME, metadata=metadata)
+    return inferred_species, tax_id, subdir
     
 
 

@@ -6,10 +6,11 @@ from two_odd_annotator.utils.io import write_metadata, load_metadata
 
 def test_write_and_load_metadata_roundtrip(tmp_path: Path):
     metadata = {
-        "sample": "A1",
-        "method": "blastp",
-        "params": {"evalue": 1e-5},
+        "datetime": "2024-06-01T12:00:00Z",
+        "species": "Arabidopsis thaliana",
+        "tax_id": 3702,
     }
+
 
     write_metadata(tmp_path, metadata)
     loaded = load_metadata(tmp_path)

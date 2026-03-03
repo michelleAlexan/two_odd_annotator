@@ -20,7 +20,7 @@ def test_init_log_creates_file_and_header(tmp_path, monkeypatch):
 
 def test_log_line_appends_message(tmp_path, monkeypatch):
     # Initialise log file first
-    init_log(str(tmp_path))
+    log_path = init_log(str(tmp_path))
 
     fake_time = "2026-03-01T12:34:56+00:00"
     monkeypatch.setattr(
@@ -28,7 +28,7 @@ def test_log_line_appends_message(tmp_path, monkeypatch):
         lambda: fake_time,
     )
 
-    log_line(str(tmp_path), "Hello world")
+    log_line(logfile_path=log_path, message="Hello world")
 
     lines = (tmp_path / LOG_FILENAME).read_text().splitlines()
     # Last line should be the message we just logged

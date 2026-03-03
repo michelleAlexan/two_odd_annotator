@@ -72,7 +72,7 @@ wheels = [
 [[package]]
 name = "bio-tools"
 version = "0.1.0"
-source = { directory = "../bio_tools" }
+source = { editable = "../bio_tools" }
 dependencies = [
     { name = "bio" },
     { name = "ete4" },
@@ -1266,7 +1266,7 @@ wheels = [
 [[package]]
 name = "two-odd-annotator"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "bio-tools" },
     { name = "biopython" },
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bio-tools", directory = "../bio_tools" },
+    { name = "bio-tools", editable = "../bio_tools" },
     { name = "biopython", specifier = ">=1.86" },
     { name = "ete4", specifier = ">=4.4.0" },
     { name = "pandas", specifier = ">=3.0.1" },
