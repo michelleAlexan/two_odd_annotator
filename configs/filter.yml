@@ -1,5 +1,15 @@
-reuse_existing: true
-up_to_date_sp_names: "configs/sp_name_correction.json"
+pipeline:
+  reuse_existing: true # whether to reuse existing intermediate files if they exist, 
+                              # set to false to force re-running all steps of the pipeline
+
+  sp_name_mapping: "configs/sp_name_correction.json" # path to JSON file mapping species names in input FASTA headers to corrected names.
+                                                  # this is needed, e.g.,  when the latin species name does not map to a taxonomic ID in the NCBI taxonomy database
+
+  seq_sim_method: "diamond"  # default method for sequence similarity filtering, 
+                              # choices are "diamond", "hmmer", "blastp" 
+  compute_plots: false # whether to compute summary plots at the end of the pipeline run
+
+
 
 filter_tools:
   blastp:
@@ -10,6 +20,7 @@ filter_tools:
 
   hmmer:
     domain_model: "data/char_2ODDs/2ODD_domain.hmm"
+
 
 parameters:
   threads: 8

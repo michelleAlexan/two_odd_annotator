@@ -12,6 +12,9 @@ dependencies = [
     "pyyaml>=6.0.3",
 ]
 
+[project.scripts]
+annodd = "two_odd_annotator.cli:main"
+
 [tool.uv.sources]
 bio-tools = { path = "../bio_tools", editable = true }
 
