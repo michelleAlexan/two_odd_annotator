@@ -6,9 +6,11 @@ from two_odd_annotator.utils.io import write_metadata, load_metadata
 
 def test_write_and_load_metadata_roundtrip(tmp_path: Path):
     metadata = {
-        "datetime": "2024-06-01T12:00:00Z",
-        "species": "Arabidopsis thaliana",
-        "tax_id": 3702,
+        "Arabidopsis_thaliana": {
+            "scientific_sp_name": "Arabidopsis thaliana",
+            "tax_id": 3702,
+            "original_file_path": "/path/to/arabidopsis.fasta"
+        },
     }
 
 

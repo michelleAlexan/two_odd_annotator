@@ -2,15 +2,21 @@
 
 The 2ODD Annotator is a bioinformatics helper package for identifying putative 2‑oxoglutarate/Fe(II)‑dependent dioxygenases (2ODD) in plant proteomes based on sequence similarity and phylogenetic grouping.
 
-It provides two services:
 
-1. **Sequence‑similarity filtering** of input plant proteomes for gene sequences with significant 2ODD similarity. There are two approaches for this:
-        - BLASTP‑based filtering (`filter.blast`)
-        - HMMER‑based filtering using an HMM profile (`filter.hmmer`)
+## Overview
+The `two-odd-annotator` is a Python pipeline designed to identify and annotate 2ODD enzymes from plant protein FASTA sequences. The pipeline is configurable via a YAML file, and can be run as a Python library or command-line tool. It provides three services:
 
-        Both filters work on protein FASTA files and can process either a single file or recursively walk a directory of FASTA files.
+1. **Sequence‑similarity filtering** of input plant proteomes for gene sequences with significant 2ODD similarity. There are three methods for this:
+        - DIAMOND-based filtering utilizing the [diamond reference database](data/char_2ODDs/dmnd_ref_db.dmnd) of characterized 2ODD sequences
+                - This is the default method for sequence similarity filtering, as it is much faster than BLASTP
+        - HMMER‑based filtering using the [2ODD domain HMM profile](data/2ODD_domain.hmm) constructed from characterized 2ODD sequences
+        - BLASTP‑based filtering using the [BLAST reference database](data/blast_ref_db/2ODD_ref_db) of characterized 2ODD sequences. 
+
 
 2. **Phylogenetic grouping / annotation** (planned): group candidate 2ODDs into functional clades based on phylogenetic trees. 
+
+3. **Visualization** (planned): generate summary plots of the distribution of 2ODD candidates across species and clades.
+
 
 ---
 
@@ -19,18 +25,18 @@ It provides two services:
 Requirements:
 
 - Python ≥ 3.13
-- A Unix‑like environment (Linux or macOS) where BLAST+ and HMMER are installed and available on the command line:
-    - `blastp` (from BLAST+) is used in `filter.blast.run_blastp`.
-    - `hmmsearch` (from HMMER 3) is used in `filter.hmmer.run_hmmsearch`.
+- A Unix‑like environment (Linux or macOS) where either DIAMOND, HMMER or BLAST+ are installed and available on the command line:
+    - `diamond` (from DIAMOND) is used in `services.seq_sim_filter.run_diamond`.
+    - `hmmsearch` (from HMMER 3) is used in `services.seq_sim_filter.run_hmmsearch`.        
+    - `blastp` (from BLAST+) is used in `services.seq_sim_filter.run_blastp`.
+
 
 Make sure these binaries are available on your `PATH`, e.g.:
-```bash
+```
+which diamond
 which blastp
 which hmmsearch
 ```
-
-`blastp` relies on a BLAST protein database as a reference to characterized 2ODD sequences (provided in `data/blast_ref_db/`).
-`hmmsearch` relies on an HMM profile constructed from characterized 2ODD sequences (provided as `data/2ODD_domain.hmm`).
 
 Python dependencies are managed via the project’s `pyproject.toml`. At minimum you will need:
 
@@ -62,102 +68,97 @@ pip install -e .
 
 ## Configuration
 
-Both BLAST and HMMER workflows are driven by a YAML configuration file, for example `configs/filter.yml`.
+You can configure the pipeline parameters, reference databases and thresholds via a YAML file. By default, the pipeline looks for `configs/filter.yml` in the project directory, but you can specify a different config file path when running the pipeline.
 
-### BLAST configuration
 
-The BLAST‑based filter expects (at minimum) keys like:
+Example config.yml:
+```
+pipeline:
+  reuse_existing: true # whether to reuse existing intermediate files if they exist, 
+                              # set to false to force re-running all steps of the pipeline
 
-```yaml
-input: path/to/proteomes_or_fasta
-output_dir: results/filter
-reuse_existing: true
+  sp_name_mapping: "configs/sp_name_correction.json" # path to JSON file mapping species names in input FASTA headers to corrected names.
+                                                  # this is needed, e.g.,  when the latin species name does not map to a taxonomic ID in the NCBI taxonomy database
 
-tools:
-        blast:
-                reference_db: data/blast_ref_db/2ODD_ref_db
-                threads: 8
-                thresholds:
-                        evalue: 1e-5
-                        pident: 40
-                        length: 100
-                        bitscore: 50
-                        num_hits: 5
+  seq_sim_method: "diamond"  # default method for sequence similarity filtering, 
+                              # choices are "diamond", "hmmer", "blastp" 
+  compute_plots: false # whether to compute summary plots at the end of the pipeline run
+
+
+
+filter_tools:
+  blastp:
+    reference_db: "data/char_2ODDs/blast_ref_db/2ODD_ref_db"
+
+  diamond:
+    reference_db: "data/char_2ODDs/dmnd_ref_db"  
+
+  hmmer:
+    domain_model: "data/char_2ODDs/2ODD_domain.hmm"
+
+
+parameters:
+  threads: 8
+  thresholds_alignment:
+    evalue: 1e-5
+    pident: 15.0
+    length: 80
+    bitscore: 40
+    num_hits: 100
+  
+  thresholds_hmmer:
+    full_Evalue: 1e-5
+    bestdom_Evalue: 1e-5
+    full_score: 50
+    bestdom_score: 50
+    N: 1
+  
 ```
 
-### HMMER configuration
-
-The HMMER‑based filter expects (at minimum):
-
-```yaml
-input: path/to/proteomes_or_fasta
-output_dir: results/filter
-reuse_existing: true
-
-tools:
-        hmmer:
-                domain_model: data/2ODD_domain.hmm
+Optionally, you can override specific config parameters via command-line arguments when running the pipeline, e.g.:
+```
+annodd --input-path data/fasta \
+       --output-dir results \
+       --config-path configs/filter.yml \
+       --reuse-existing false \
+       --seq-sim-method hmmer \
+       --compute-plots true
 ```
 
-You can reuse the same top‑level keys (`input`, `output_dir`, `reuse_existing`) across both tools.
+or when using the Python library:
+```python
+from two_odd_annotator.pipeline.runner import Runner   
+
+runner = Runner(
+    input_path = "data/fasta", 
+    output_dir = "results", 
+    config_path = "configs/filter.yml")
+
+runner.run(
+        reuse_existing = False,
+        seq_sim_method = "hmmer",
+        compute_plots = True)
+```     
 
 
 ---
 
-## Usage
+## Result folder structure
 
-The package is currently used as a Python library rather than a finished command‑line tool.  
-Typical usage is to load your YAML configuration and call either the BLAST or HMMER pipeline.
+For each species, a subdirectory will be created containing filtered results:
 
-### BLASTP‑based sequence similarity filter
-
-```python
-from two_odd_annotator.filter import blast
-
-config = blast.load_config("configs/filter.yml")
-
-input_path = config["input"]
-if os.path.isfile(input_path):
-        blast.main(input_path, config)
-else:
-        blast.process_directory(input_path, config)
 ```
-
-This will:
-
-- Run `blastp` against the specified reference database.
-- Filter hits by identity, alignment length, bitscore, and number of hits per query.
-- Write:
-    - `blast_results.tsv` – raw BLAST tabular output.
-    - `blast_filtered_hits.csv` – filtered hits table.
-    - `filter_blast.fasta` – FASTA sequences that passed the thresholds.
-
-### HMMER‑based sequence similarity filter
-
-```python
-from two_odd_annotator.filter import hmmer
-
-config = hmmer.load_config("configs/filter.yml")
-
-input_path = config["input"]
-if os.path.isfile(input_path):
-        hmmer.main(input_path, config)
-else:
-        hmmer.process_directory(input_path, config)
+results/
+├── Arabidopsis_thaliana/
+│   ├── metadata.yml
+│   ├── clean_fasta_headers.json
+│   ├── diamond_results.tsv / blastp_results.tsv / hmmer_results.out
+│   ├── filtered_diamond_hits.csv / filtered_blastp_hits.csv / filtered_hmmer_hits.csv
+│   └── filtered_diamond.fasta / filtered_blastp.fasta / filtered_hmmer.fasta
+├── Oryza_sativa/
+│   └── ...
+└── filter.log
 ```
-
-This will:
-
-- Run `hmmsearch` with your 2ODD HMM profile.
-- Parse the "Scores for complete sequences" table into a pandas DataFrame.
-- Optionally restrict to sequences with a single domain (`N == 1`).
-- Write:
-    - `hmmer2ODD_hits.out` – raw hmmsearch text output.
-    - `hmmer2ODD_hits.csv` – parsed table of hits.
-    - `filter_hmmer.fasta` – FASTA of sequences with accepted HMMER hits.
-
-When `reuse_existing` is set to `true` in the config, both pipelines will skip recomputation for FASTA files where all expected output files already exist.
-
 ---
 
 

@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Any
 
-import yaml
+from two_odd_annotator.constants import METADATA_YML
 
-METADATA_FILENAME = "metadata.yml"
+import yaml
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def write_metadata(output_path: Path, metadata: dict[str, Any]) -> Path:
         Path to the written metadata file.
     """
     if output_path.is_dir():
-        output_path = output_path / METADATA_FILENAME
+        output_path = output_path / METADATA_YML
     else:
         output_path = Path(output_path)
 
@@ -54,12 +54,12 @@ def load_metadata(path: str | Path) -> dict[str, Any]:
     path = Path(path)
 
     if path.is_dir():
-        meta_path = path / METADATA_FILENAME
-    elif path.is_file() and path.name == METADATA_FILENAME:
+        meta_path = path / METADATA_YML
+    elif path.is_file() and path.name == METADATA_YML:
         meta_path = path
     else:
         raise FileNotFoundError(
-            f"Expected metadata file '{METADATA_FILENAME}' in directory or as a file."
+            f"Expected metadata file '{METADATA_YML}' in directory or as a file."
         )
 
     if not meta_path.is_file():

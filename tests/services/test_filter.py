@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 
-from two_odd_annotator.seq_sim_filter import run
+from two_odd_annotator.services.seq_sim_filter import run
 
 TEST_INPUT_DIR = Path(__file__).parent / "data" 
 TEST_OUTPUT_DIR = Path(__file__).parent / "results"

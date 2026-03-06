@@ -1,21 +1,16 @@
 import argparse
 from two_odd_annotator.pipeline import Runner
-from two_odd_annotator.constants import DEFAULT_CONFIG_PATH
 
 from importlib.metadata import version
 
 
 def main():
-
+    """
+    Command line interface for running the 2ODD annotation pipeline.
+    """
     parser = argparse.ArgumentParser(
         prog="annodd", 
         description="Run 2ODD annotation pipeline for plant protein sequences."
-        )
-    
-    parser.add_argument(
-        "--version", 
-        action="version", 
-        version=f"annodd {version('two_odd_annotator')}"
         )
     
     parser.add_argument(
@@ -33,11 +28,17 @@ def main():
         "Each species will have its own subdirectory named according to the Latin species name, e.g. 'Solanum_tuberosum'."
     )
 
+
     parser.add_argument(
-        "--config-path", 
-        default=DEFAULT_CONFIG_PATH,
-        help="Path to the config YAML file defining parameters for the pipeline run."
+        "--config-path",
+        help="Path to custom config YAML file. If not provided, default config is used."
     )
+
+    parser.add_argument(
+        "--version", 
+        action="version", 
+        version=f"annodd {version('two_odd_annotator')}"
+        )
 
     parser.add_argument(
         "--reuse-existing",
@@ -68,15 +69,14 @@ def main():
 
     # Initialize pipeline
     pipeline = Runner(
-        input_path = args.input_path, 
-        output_dir = args.output_dir, 
-        config_path = args.config_path
-        )
-
-    
-    pipeline.run(
+        input_path=args.input_path,
+        output_dir=args.output_dir,
+        config_path=args.config_path,
         reuse_existing=args.reuse_existing.lower() == "true" if args.reuse_existing else None,
         sp_name_mapping=args.sp_name_mapping,
         seq_sim_method=args.seq_sim_method,
-        compute_plots=args.compute_plots.lower() == "true" if args.compute_plots else None
+        compute_plots=args.compute_plots.lower() == "true" if args.compute_plots else None,
     )
+
+    pipeline.run()
+

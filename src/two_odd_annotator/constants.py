@@ -1,5 +1,5 @@
 # Default config file path to use if not provided by user
-DEFAULT_CONFIG_PATH = "config/default_config.yml"
+DEFAULT_CONFIG_PATH = "configs/default_config.yml"
 
 # Name of the output base directory for all results
 RESULTS_DIR = "2ODD_annotation"

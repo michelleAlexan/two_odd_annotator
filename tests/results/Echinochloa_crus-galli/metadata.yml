@@ -1,3 +1,5 @@
-creation_timestamp: '2026-03-03T13:43:28.919668+00:00'
-species: Echinochloa crus-galli
-tax_id: 90397
+Echinochloa_crus-galli:
+  scientific_sp_name: Echinochloa crus-galli
+  tax_id: 90397
+  original_file_path: /Users/michellealexander/projects/two_odd_annotator/tests/data/Echinochloa_crus_galli.pep.fasta
+  cleaned_fasta_path: /Users/michellealexander/projects/two_odd_annotator/tests/results/clean_Echinochloa_crus-galli.fasta

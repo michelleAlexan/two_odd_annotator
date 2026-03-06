@@ -1,3 +1,5 @@
-creation_timestamp: '2026-03-03T13:43:28.889949+00:00'
-species: Arabidopsis thaliana
-tax_id: 3702
+Arabidopsis_thaliana:
+  scientific_sp_name: Arabidopsis thaliana
+  tax_id: 3702
+  original_file_path: /Users/michellealexander/projects/two_odd_annotator/tests/data/Arabidopsis_thaliana.pep.fasta
+  cleaned_fasta_path: /Users/michellealexander/projects/two_odd_annotator/tests/results/clean_Arabidopsis_thaliana.fasta
