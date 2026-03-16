@@ -58,3 +58,60 @@ def test_all_filter_methods(tmp_path):
             filtered_fasta = f.read()
             assert filtered_fasta == expected_echinochloa_filtered_2ODD_fasta, f"Filtered FASTA does not match expected for Echinochloa crus-galli with method {method}"
 
+
+
+def test_seq_len_thresh_default_100(tmp_path):
+    # fasta content with seq length of 186
+    test_fasta_path = Path(__file__).parents[1] / "data" / "Vitis_rotundifolia.pep.fasta"
+    pipline = Runner(
+        input_path=test_fasta_path,
+        output_base_dir=tmp_path / "results", 
+        seq_sim_method="diamond",
+    )
+    pipline.run()
+
+    # check that all filtered FASTA files contain the expected headers and sequences for each method
+    with open(tmp_path / "results" / "Vitis_rotundifolia" / f"filtered_diamond.fasta") as f:
+        filtered_fasta = f.read()
+        assert filtered_fasta == "", "Filtered FASTA should be empty since sequence length is outside of default threshold of 100 from median 2ODD sequence length of 349"
+
+EXPECTED_FASTA = """>lcl_CM058159.1_cds_KAJ9692488.1_17292__103349
+MAVYDKDRLGVHNTVVGNQNIIDKPYHGYTLERSVASLHQGLGIDNCKKLIQSFAKVIFP
+PLIPTKSVMSILHQNQVNGLEIETKDGKWIGYEPLTPSLFSQGSKIHPPKHQVIMKGNEA
+RYSLRLFSFTKGLIKIPKELVDDHHPLQFQSFDHIDLLISFAQKKVEILRVLLKPTEALL
+KISLI*
+"""
+
+def test_seq_len_thresh_override(tmp_path):
+    # fasta content with seq length of 186
+    test_fasta_path = Path(__file__).parents[1] / "data" / "Vitis_rotundifolia.pep.fasta"
+    pipline = Runner(
+        input_path=test_fasta_path,
+        output_base_dir=tmp_path / "results",
+        seq_sim_method="diamond",
+        seq_len_thresh=200
+    )
+    pipline.run()
+
+    # check that all filtered FASTA files contain the expected headers and sequences for each method
+    with open(tmp_path / "results" / "Vitis_rotundifolia" / f"filtered_diamond.fasta") as f:
+        filtered_fasta = f.read()
+        assert filtered_fasta == EXPECTED_FASTA, "Filtered FASTA should contain the sequence since it is within the overridden threshold of 200 from median 2ODD sequence length of 349"
+
+
+def test_seq_len_thresh_no_filtering(tmp_path):
+    # fasta content with seq length of 186
+    test_fasta_path = Path(__file__).parents[1] / "data" / "Vitis_rotundifolia.pep.fasta"
+    pipline = Runner(
+        input_path=test_fasta_path,
+        output_base_dir=tmp_path / "results",
+        seq_sim_method="diamond",
+        seq_len_thresh=-1
+    )
+    pipline.run()
+
+    # check that all filtered FASTA files contain the expected headers and sequences for each method
+    with open(tmp_path / "results" / "Vitis_rotundifolia" / f"filtered_diamond.fasta") as f:
+        filtered_fasta = f.read()
+        assert filtered_fasta == EXPECTED_FASTA, "Filtered FASTA should contain the sequence since no length filtering should be applied when threshold is set to -1"
+

@@ -1,4 +1,5 @@
 #%%
+from logging import config
 import os
 import subprocess
 from pathlib import Path
@@ -22,10 +23,14 @@ def count_fasta_sequences(fasta_file: str) -> int:
     return sum(1 for _ in SeqIO.parse(fasta_file, "fasta"))
 
 
-def write_filtered_fasta(input_fasta: str, output_fasta: str, ids: set):
+def write_filtered_fasta(input_fasta: str, output_fasta: str, ids: set, seq_len_thresh: int | None) -> None:
+    median_2ODD_seq_len = 349
     with open(output_fasta, "w") as out:
         for record in SeqIO.parse(input_fasta, "fasta"):
             if record.id in ids:
+                if seq_len_thresh is not None:
+                    if len(record.seq) < median_2ODD_seq_len - seq_len_thresh or len(record.seq) > median_2ODD_seq_len + seq_len_thresh:
+                        continue
                 SeqIO.write(record, out, "fasta")
 
 
@@ -52,6 +57,9 @@ def run_alignment(
 
     threads = config["parameters"]["threads"]
     thresholds = config["parameters"]["thresholds_alignment"]
+    seq_len_thresh = config["pipeline"]["seq_len_thresh"]
+    if seq_len_thresh == -1:
+        seq_len_thresh = None
 
     output_tsv = os.path.join(output_dir, f"{tool}_results.tsv")
     filtered_csv = os.path.join(output_dir, f"filtered_{tool}_hits.csv")
@@ -117,7 +125,7 @@ def run_alignment(
     # Write filtered FASTA (empty if no hits)
     passed_ids = set(df_filtered["qseqid"])
     if passed_ids:
-        write_filtered_fasta(input_file, filtered_fasta, passed_ids)
+        write_filtered_fasta(input_file, filtered_fasta, passed_ids, seq_len_thresh=seq_len_thresh)
     else:
         # create empty FASTA if no sequences passed thresholds
         open(filtered_fasta, "w").close()
@@ -179,6 +187,9 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     """
     hmmer_cfg = config["filter_tools"]["hmmer"]
     thresholds = {key: float(val) for key, val in config["parameters"]["thresholds_hmmer"].items()}
+    seq_len_thresh = config["pipeline"]["seq_len_thresh"]
+    if seq_len_thresh == -1:
+        seq_len_thresh = None
 
     os.makedirs(output_dir, exist_ok=True)
     output_txt = Path(output_dir) / "hmmer_results.out"
@@ -227,7 +238,7 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     # Filter FASTA
     keep_ids = set(df_filtered["Sequence"])
     if not df.empty:
-        write_filtered_fasta(input_file, filtered_fasta, keep_ids)
+        write_filtered_fasta(input_file, filtered_fasta, keep_ids, seq_len_thresh=seq_len_thresh)
 
     print(f"HMMER: {len(keep_ids)} sequences passed thresholds")
 

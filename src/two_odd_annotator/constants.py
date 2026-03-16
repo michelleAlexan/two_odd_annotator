@@ -20,4 +20,3 @@ FILTERED_DIAMOND_FASTA = "filtered_diamond.fasta"
 FILTERED_HMMER_FASTA = "filtered_hmmer.fasta"
 FILTERED_BLASTP_FASTA = "filtered_blastp.fasta"
 
-

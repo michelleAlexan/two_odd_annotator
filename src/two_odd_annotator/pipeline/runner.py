@@ -28,7 +28,8 @@ class Runner:
             reuse_existing: bool | None = None,
             sp_name_mapping: str | None = None,
             seq_sim_method: str | None = None,
-            compute_plots: bool | None = None
+            compute_plots: bool | None = None,
+            seq_len_thresh: str | None = None
         ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
@@ -49,6 +50,8 @@ class Runner:
             self.config["pipeline"]["seq_sim_method"] = seq_sim_method
         if compute_plots is not None:
             self.config["pipeline"]["compute_plots"] = compute_plots
+        if seq_len_thresh is not None:
+            self.config["pipeline"]["seq_len_thresh"] = int(seq_len_thresh)
 
         # initialize the pipeline run by creating a state object.
         # State tracks initializes output directory and subdirectories,
@@ -63,7 +66,7 @@ class Runner:
     def run(self):
         """Run the full two_odd_annotator pipeline. 
         Steps:
-        1. Sequence similarity filtering (Diamond, HMMER or BLASTP)
+        1. Sequence similarity filtering (HMMER, Diamond, or BLASTP)
         2. 2ODD annotation (based on phylogenetic evidence)
         3. Visualization of results"""
 

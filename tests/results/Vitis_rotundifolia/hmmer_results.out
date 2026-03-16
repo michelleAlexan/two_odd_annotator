@@ -1,0 +1,51 @@
+# hmmsearch :: search profile(s) against a sequence database
+# HMMER 3.4 (Aug 2023); http://hmmer.org/
+# Copyright (C) 2023 Howard Hughes Medical Institute.
+# Freely distributed under the BSD open source license.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# query HMM file:                  data/char_2ODDs/2ODD_domain.hmm
+# target sequence database:        /Users/michellealexander/projects/two_odd_annotator/tests/results/Vitis_rotundifolia/clean_Vitis_rotundifolia.fasta
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Query:       2ODD_char_baits_MSA_trimmed  [M=333]
+Scores for complete sequences (score includes all domains):
+   --- full sequence ---   --- best 1 domain ---    -#dom-
+    E-value  score  bias    E-value  score  bias    exp  N  Sequence                                      Description
+    ------- ------ -----    ------- ------ -----   ---- --  --------                                      -----------
+    1.3e-13   37.0   0.0    1.3e-12   33.6   0.0    1.9  1  lcl_CM058159.1_cds_KAJ9692488.1_17292__103349  
+
+
+Domain annotation for each sequence (and alignments):
+>> lcl_CM058159.1_cds_KAJ9692488.1_17292__103349  
+   #    score  bias  c-Evalue  i-Evalue hmmfrom  hmm to    alifrom  ali to    envfrom  env to     acc
+ ---   ------ ----- --------- --------- ------- -------    ------- -------    ------- -------    ----
+   1 !   33.6   0.0   1.3e-12   1.3e-12     213     320 ..      67     164 ..      66     174 .. 0.87
+
+  Alignments for each domain:
+  == domain 1  score: 33.6 bits;  conditional E-value: 1.3e-12
+                    2ODD_char_baits_MSA_trimmed 213 sllTiLlqdevgGLqv.lkdgkWvsVkpvpgalvvniGDllqilsNgryksvlHRvvvnsekeR 275
+                                                    s+++iL+q++v+GL++  kdgkW+  +p   +l+ +           + +  +H+v+++ +++R
+  lcl_CM058159.1_cds_KAJ9692488.1_17292__103349  67 SVMSILHQNQVNGLEIeTKDGKWIGYEPLTPSLFSQ---------GSKIHPPKHQVIMKGNEAR 121
+                                                    689*************88**************9743.........458899************* PP
+
+                    2ODD_char_baits_MSA_trimmed 276 lSvavFlnpkkdavisPlpelveeeeprlykeftfkeylkkklkk 320
+                                                    +S+ +F  +k   +i  ++elv++++p  +++f+  ++l + ++k
+  lcl_CM058159.1_cds_KAJ9692488.1_17292__103349 122 YSLRLFSFTKGLIKI--PKELVDDHHPLQFQSFDHIDLLISFAQK 164
+                                                    ********9996555..789**999********998888776644 PP
+
+
+
+Internal pipeline statistics summary:
+-------------------------------------
+Query model(s):                            1  (333 nodes)
+Target sequences:                          1  (186 residues searched)
+Passed MSV filter:                         1  (1); expected 0.0 (0.02)
+Passed bias filter:                        1  (1); expected 0.0 (0.02)
+Passed Vit filter:                         1  (1); expected 0.0 (0.001)
+Passed Fwd filter:                         1  (1); expected 0.0 (1e-05)
+Initial search space (Z):                  1  [actual number of targets]
+Domain search space  (domZ):               1  [number of targets reported over threshold]
+# CPU time: 0.00u 0.00s 00:00:00.00 Elapsed: 00:00:00.00
+# Mc/sec: 30.06
+//
+[ok]

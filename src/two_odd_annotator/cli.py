@@ -55,13 +55,20 @@ def main():
     parser.add_argument(
     "--seq-sim-method",
     choices=["diamond","blastp","hmmer"],
-    help="Override config: method for sequence similarity filtering."
-    )
+    help="Override config: method for sequence similarity filtering. Default is 'hmmer'.")
+
 
     parser.add_argument(
         "--compute-plots",
         choices=["true","false"],
         help="Override config: whether to compute summary plots after pipeline run."
+    )
+
+    parser.add_argument(
+        "--seq-len-thresh",
+        help="Override config: the length of the candidate sequence must be within +/- this value of the median 2ODD sequence length of 349 aa. " \
+        "Default is 100." \
+        "If set to -1, no length filtering will be applied."
     )
 
     args = parser.parse_args()
@@ -70,12 +77,13 @@ def main():
     # Initialize pipeline
     pipeline = Runner(
         input_path=args.input_path,
-        output_dir=args.output_dir,
+        output_base_dir=args.output_dir,
         config_path=args.config_path,
         reuse_existing=args.reuse_existing.lower() == "true" if args.reuse_existing else None,
         sp_name_mapping=args.sp_name_mapping,
         seq_sim_method=args.seq_sim_method,
         compute_plots=args.compute_plots.lower() == "true" if args.compute_plots else None,
+        seq_len_thresh=args.seq_len_thresh,
     )
 
     pipeline.run()

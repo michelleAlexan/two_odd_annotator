@@ -1,0 +1,5 @@
+Vitis_rotundifolia:
+  scientific_sp_name: Vitis rotundifolia
+  tax_id: 103349
+  original_file_path: /Users/michellealexander/projects/two_odd_annotator/tests/data/Vitis_rotundifolia.pep.fasta
+  cleaned_fasta_path: /Users/michellealexander/projects/two_odd_annotator/tests/results/Vitis_rotundifolia/clean_Vitis_rotundifolia.fasta

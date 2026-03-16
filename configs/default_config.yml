@@ -5,10 +5,12 @@ pipeline:
   sp_name_mapping: "configs/sp_name_correction.json" # path to JSON file mapping species names in input FASTA headers to corrected names.
                                                   # this is needed, e.g.,  when the latin species name does not map to a taxonomic ID in the NCBI taxonomy database
 
-  seq_sim_method: "diamond"  # default method for sequence similarity filtering, 
+  seq_sim_method: "hmmer"  # default method for sequence similarity filtering, 
                               # choices are "diamond", "hmmer", "blastp" 
   compute_plots: false # whether to compute summary plots at the end of the pipeline run
 
+  seq_len_thresh: 100 # the length of the candidate sequence must be within +/- 100 amino acids of the median 2ODD sequence length of 349 aa. 
+                      # if set to null, no length filtering will be applied.
 
 
 filter_tools:
