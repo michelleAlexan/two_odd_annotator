@@ -83,7 +83,7 @@ class Runner:
                 seq_sim_method = self.config["pipeline"]["seq_sim_method"]
                 )
             
-            # annotate.run(cleaned_fasta_path, subdir, self.config_path)
+        # annotate.run(result_dir=self.state.output_base_dir, config_path=self.config_path)
         
         # if self.config["pipeline"]["compute_plots"]:
         #     vizualize.run(self.state.output_base_dir, self.config_path)

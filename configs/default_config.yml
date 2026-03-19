@@ -15,13 +15,13 @@ pipeline:
 
 filter_tools:
   blastp:
-    reference_db: "data/char_2ODDs/blast_ref_db/2ODD_ref_db"
+    reference_db: "data/2ODDs/blast_ref_db/2ODD_ref_db"
 
   diamond:
-    reference_db: "data/char_2ODDs/dmnd_ref_db"  
+    reference_db: "data/2ODDs/dmnd_ref_db"  
 
   hmmer:
-    domain_model: "data/char_2ODDs/2ODD_domain.hmm"
+    domain_model: "data/2ODDs/2ODD_domain.hmm"
 
 
 parameters:
@@ -39,5 +39,9 @@ parameters:
     full_score: 50
     bestdom_score: 50
     N: 1
-  
+
+annotate:
+  ingroup: "data/2ODDs/2ODD_ingroup.fasta"
+  major_char_2ODD_info: "data/2ODDs/major_char_2ODD_info_dict.json" 
+  major_minor_2ODD_clusters: "data/2ODDs/major_minor_2ODD_clusters_manual.json"
 

@@ -1,0 +1,22 @@
+{
+  "version": "1.2",
+  "dbname": "2ODD_ref_db",
+  "dbtype": "Protein",
+  "db-version": 5,
+  "description": "/Users/michellealexander/projects/bait_sequence_collection/data/2ODDs/2ODD_char_baits.fasta",
+  "number-of-letters": 107636,
+  "number-of-sequences": 305,
+  "last-updated": "2026-03-19T20:34:00",
+  "number-of-volumes": 1,
+  "bytes-total": 296019,
+  "bytes-to-cache": 110558,
+  "files": [
+    "2ODD_ref_db.pdb",
+    "2ODD_ref_db.phr",
+    "2ODD_ref_db.pin",
+    "2ODD_ref_db.pot",
+    "2ODD_ref_db.psq",
+    "2ODD_ref_db.ptf",
+    "2ODD_ref_db.pto"
+  ]
+}
