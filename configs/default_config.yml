@@ -43,5 +43,5 @@ parameters:
 annotate:
   ingroup: "data/2ODDs/2ODD_ingroup.fasta"
   major_char_2ODD_info: "data/2ODDs/major_char_2ODD_info_dict.json" 
-  major_minor_2ODD_clusters: "data/2ODDs/major_minor_2ODD_clusters_manual.json"
+  major_minor_2ODD_clusters: "data/2ODDs/major_minor_2ODD_ids_manual.json"
 
