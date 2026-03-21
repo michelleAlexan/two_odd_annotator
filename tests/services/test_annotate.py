@@ -7,7 +7,6 @@ import random
 from ete4 import PhyloTree, Tree
 
 from bio_tools.viz.tree import (
-    assign_props_to_leaves, 
     explore_tree_plant_groups,
     load_treecluster_assignments, 
     explore_tree_cluster_clades
@@ -24,6 +23,9 @@ from two_odd_annotator.constants import (
 )
 
 from two_odd_annotator.services.annotate import (
+    reverse_major_minor_2ODD_dict,
+    assign_2ODD_props,
+    assign_plant_group_props,
     create_annotation_fasta, 
     from_fasta_to_nwk,
     build_distance_lookup, 
@@ -32,31 +34,49 @@ from two_odd_annotator.services.annotate import (
     )
 
 #%%
-RESULTS_DIR = Path(__file__).parents[1] /  "results" 
+def test_reverse_major_minor_2ODD_dict():
+    input_dict = {
+        "major_2ODDs": {
+            "2ODD01": ["seq1", "seq2"],
+            "2ODD02": ["seq3"]
+        },
+        "minor_2ODDs": {
+            "2ODD_minor01": ["seq4", "seq5"]
+        }
+    }
 
-# delete existing annotation results files before running tests
-if (RESULTS_DIR / ANNOTATION_FASTA).exists():
-    (RESULTS_DIR / ANNOTATION_FASTA).unlink()
-if (RESULTS_DIR / ANNOTATION_MSA).exists():
-    (RESULTS_DIR / ANNOTATION_MSA).unlink()
-if (RESULTS_DIR / ANNOTATION_MSA_TRIM).exists():
-    (RESULTS_DIR / ANNOTATION_MSA_TRIM).unlink()
-if (RESULTS_DIR / ANNOTATION_TREE).exists():
-    (RESULTS_DIR / ANNOTATION_TREE).unlink()
+    expected = {
+        "seq1": "2ODD01",
+        "seq2": "2ODD01",
+        "seq3": "2ODD02",
+        "seq4": "2ODD_minor01",
+        "seq5": "2ODD_minor01"
+    }
+
+    result = reverse_major_minor_2ODD_dict(input_dict)
+
+    assert result == expected
+
+
+#%%
+RESULTS_DIR = Path(__file__).parents[1] /  "results" 
 
 config = load_config(Path(__file__).parents[2] / DEFAULT_CONFIG_PATH)
 config["annotate"]["ingroup"] = Path(__file__).parents[2] / "data" / "2ODDs" / "characterized_2ODDs.fasta"
 
-major_minor_2ODD_clusters_path = Path(__file__).parents[2] / config["annotate"]["major_minor_2ODD_clusters"]
-major_minor_2ODD_clusters = json.load(open(major_minor_2ODD_clusters_path))
-major_2ODDs = major_minor_2ODD_clusters["major_2ODDs"]
-seq_id_to_cluster_id = {}
-for cluster_id, seqs in major_2ODDs.items():
-    for seq in seqs:
-        seq_id_to_cluster_id[seq] = cluster_id
+major_minor_2ODDs_path = Path(__file__).parents[2] / "data" / "2ODDs" / "major_minor_2ODD_ids_manual.json"
+major_minor_2ODDs_dict = json.load(open(major_minor_2ODDs_path))
+
+seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict=major_minor_2ODDs_dict)
+
+
 
 
 def test_create_annotation_fasta():
+    if (RESULTS_DIR / ANNOTATION_FASTA).exists():
+        (RESULTS_DIR / ANNOTATION_FASTA).unlink()   
+
+    
     create_annotation_fasta(
         results_dir=RESULTS_DIR,
         ingroup_2ODD_fasta=config["annotate"]["ingroup"],
@@ -69,7 +89,12 @@ def test_create_annotation_fasta():
 
 
 def test_from_fasta_to_nwk():
-
+    if (RESULTS_DIR / ANNOTATION_MSA).exists():
+        (RESULTS_DIR / ANNOTATION_MSA).unlink()
+    if (RESULTS_DIR / ANNOTATION_MSA_TRIM).exists():
+        (RESULTS_DIR / ANNOTATION_MSA_TRIM).unlink()
+    if (RESULTS_DIR / ANNOTATION_TREE).exists():
+        (RESULTS_DIR / ANNOTATION_TREE).unlink()
     from_fasta_to_nwk(fasta_path=RESULTS_DIR / ANNOTATION_FASTA,
                       msa_path=RESULTS_DIR / ANNOTATION_MSA,
                         msa_trim_path=RESULTS_DIR / ANNOTATION_MSA_TRIM,
@@ -80,16 +105,44 @@ def test_from_fasta_to_nwk():
     assert (RESULTS_DIR / ANNOTATION_MSA_TRIM).exists(), "Annotation trimmed MSA file was not created."
     assert (RESULTS_DIR / ANNOTATION_TREE).exists(), "Annotation tree file was not created."
 
-    
+
+# %% test assign props functions
+from_fasta_to_nwk(fasta_path=RESULTS_DIR / ANNOTATION_FASTA,
+                    msa_path=RESULTS_DIR / ANNOTATION_MSA,
+                    msa_trim_path=RESULTS_DIR / ANNOTATION_MSA_TRIM,
+                    tree_path=RESULTS_DIR / ANNOTATION_TREE)
+
+# load test tree
+test_with_char_tree = RESULTS_DIR / ANNOTATION_TREE
+t_char_2ODDs = PhyloTree(open(test_with_char_tree), sp_naming_function=lambda name: name.split('__')[-1])
+tax2names, tax2lineages, tax2rank = t_char_2ODDs.annotate_ncbi_taxa(taxid_attr='species')
+
+def test_assign_2ODD_props():
+    assign_2ODD_props(
+        tree=t_char_2ODDs,
+        seq_to_2ODD_id=seq_to_2ODD_id,
+        annotation_fasta=RESULTS_DIR / ANNOTATION_FASTA
+    )
+
+    assert t_char_2ODDs["PV023584__F3H__flavonoid_pathway__981085"].props["two_odd_id"] == "2ODD14"
+    assert t_char_2ODDs["sp|Q96323.1_ANS_Arabidopsis_thaliana__3702"].props["two_odd_id"] == "candidate"
+
+def test_assign_plant_group_props():
+    assign_plant_group_props(tree=t_char_2ODDs)
+
+    assert t_char_2ODDs["At4g10500__S3H__salicylic_acid_metabolism__3702"].props["plant_group"] == "Dicots"
+    assert t_char_2ODDs["Os04g49210__S5H__salicylic_acid_metabolism__4530"].props["plant_group"] == "Monocots"
+
 
 #%% test landscape clustering functions
 
-# load test tree
-test_tree_path = Path(__file__).parents[2] / "tests" / "data" / "test_anno_tree.nwk"
-t = PhyloTree(open(test_tree_path), sp_naming_function=lambda name: name.split('__')[-1])
+test_anno_tree_path = Path(__file__).parents[1] / "data" / "test_anno_tree.nwk"
+t = PhyloTree(open(test_anno_tree_path), sp_naming_function=lambda name: name.split('__')[-1])
 tax2names, tax2lineages, tax2rank = t.annotate_ncbi_taxa(taxid_attr='species')
+assign_2ODD_props(tree=t, seq_to_2ODD_id=seq_to_2ODD_id, annotation_fasta=RESULTS_DIR / ANNOTATION_FASTA)
+assign_plant_group_props(tree=t)
+assign_plant_group_props(tree=t)
 
-assign_props_to_leaves(t, seq_to_cluster_id=seq_id_to_cluster_id)
 # explore_tree_cluster_clades(t)
 #%% TEST LANDSCAPE CLUSTERING
 
@@ -223,16 +276,14 @@ expected_landscape_without_candidates = [
     ],
     [
         t["lcl_NC_031989.1_cds_XP_019252277.1_2282__49451"], # minor 2ODD cluster
-        t["Kaladp0011s0492.1.v1.1__63787"]
     ],
     [
+        t["Kaladp0011s0492.1.v1.1__63787"],
         t['lcl_OX459121.1_cds_CAI9101307.1_14231__43536'], # 2ODD40
         t['rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058'], 
-        t['lcl_NC_039901.1_cds_XP_027112943.1_15453__13443']
-    ], 
-    [
+        t['lcl_NC_039901.1_cds_XP_027112943.1_15453__13443'],
         t["rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058"]
-    ], # minor 2ODD cluster
+    ], 
     [
         t['lcl_NC_080155.1_cds_XP_057473373.1_43266__165200'], # 2ODD38
         t['Hma1.2p1_1763F.1_g301360.1__23110'],
@@ -502,9 +553,6 @@ def test_get_landscape_without_candidates():
 # take the test tree with all input sequences, manually select candidates, and create a dictionary with manually assigned candidates as keys that map to the expected output of the annotation service.
 # map candidate name to expected cluster id resulted from the annotation service.
 # The expected cluster id IS NOT the cluster id of the actual input sequence 
-
-
-
 
 expected_landscape_with_candidates = [
     [
@@ -936,7 +984,7 @@ def test_landscape_with_candidates():
 
     for leaf in t:
         if leaf.name in manual_candidates:
-            leaf.props["cluster_id"] = "candidate"
+            leaf.props["two_odd_id"] = "candidate"
 
     result = get_landscape(t)
     assert result == expected_landscape_with_candidates
