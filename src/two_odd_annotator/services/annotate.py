@@ -4,6 +4,7 @@ from ete4 import PhyloTree, Tree
 from Bio import SeqIO
 from pathlib import Path
 import json
+import numpy as np
 
 from typing import Literal, Callable
 
@@ -454,6 +455,101 @@ def resolve_candidates_in_landscape(
 
 
 
+def two_odd_id_to_landscape_indices(landscape: list[list[Tree | PhyloTree]]) -> dict[str, list[int]]:
+    """
+    Build a dictionary mapping each two_odd_id to the list of landscape indices where it occurs.
+
+    Parameters
+    ----------
+    landscape : list[list[Tree | PhyloTree]]
+        Ordered list of clusters. Each cluster is a list of tree nodes. Each node must have:
+            - node.props["two_odd_id"] : str
+
+    Returns
+    -------
+    dict[str, list[int]]
+        Dictionary mapping each two_odd_id to the list of landscape indices where it occurs.
+        e.g. {
+            "2ODD01": [0, 1],
+            "2ODD02": [2],
+            "candidate": [3, 4, 5]
+        }
+    """
+    id_to_indices = {}
+    for idx, cluster in enumerate(landscape):
+        two_odd_id = cluster[0].props.get("two_odd_id")
+        if two_odd_id not in id_to_indices:
+            id_to_indices[two_odd_id] = []
+        id_to_indices[two_odd_id].append(idx)
+    return id_to_indices
+
+def seq_id_to_landscape_idx(landscape: list[list[Tree | PhyloTree]]) -> dict[str, int]:
+    """
+    Build a dictionary mapping each sequence ID to its corresponding landscape index.
+
+    Parameters
+    ----------
+    landscape : list[list[Tree | PhyloTree]]
+        Ordered list of clusters. Each cluster is a list of tree nodes. Each node must have:
+            - node.name : str
+
+    Returns
+    -------
+    dict[str, int]
+        Dictionary mapping each sequence ID to its corresponding landscape index.
+        e.g. {
+            "seqA": 0,
+            "seqB": 1,
+            "seqC": 2
+        }
+    """
+    seq_id_to_idx = {}
+    for idx, cluster in enumerate(landscape):
+        for node in cluster:
+            seq_id_to_idx[node.name] = idx
+    return seq_id_to_idx
+
+
+
+def landscape_meta_info(
+        landscape: list[list[Tree | PhyloTree]],
+        major_minor_2ODD_dict: dict[str, list[str]],
+        candidates: set[str]
+        ) -> dict[str, dict]:
+    """
+    Build a dictionary containing meta information about each cluster in the landscape, including:
+        - two_odd_id    
+        - percentage of ingroup 2ODD sequences covered (if applicable)
+        - number of sequences in the cluster
+        - plant groups represented in the cluster (e.g. algae, mosses, liverworts, ferns, gymnosperms, basal angiosperms, monocots, dicots)
+        - whether the cluster contains candidate sequences
+        - whether the cluster is unresolved (contains candidate sequences that could not be confidently assigned to a neighboring cluster)     
+               
+    """
+
+    meta_info = {}
+    two_odd_id_to_size = {two_odd_id: len(seq_ids) for two_odd_id, seq_ids in major_minor_2ODD_dict.get("major_2ODDs", {}).items()}
+    for idx, cluster in enumerate(landscape):
+
+        two_odd_id = cluster[0].props.get("two_odd_id") if cluster[0].props.get("two_odd_id") != "unresolved" else None
+        size = len(cluster)
+        unresolved = True if bool(cluster[0].props.get("two_odd_id") == "unresolved") else False
+
+        contains_candidates = any(node.name in candidates for node in cluster)
+        two_odd_ingroup_percentage_covered = np.round(size / two_odd_id_to_size[two_odd_id], 3) if two_odd_id != "minor_2ODD_cluster" and not unresolved else None
+
+        plant_groups = set(node.props.get("plant_group") for node in cluster if node.props.get("plant_group") is not None)
+
+        meta_info[idx] = {
+            "two_odd_id": two_odd_id,
+            "percentage_of_ingroup_2ODD": two_odd_ingroup_percentage_covered,
+            "num_sequences": size,
+            "plant_groups": sorted(plant_groups),
+            "contains_candidates": contains_candidates,
+            "unresolved": unresolved
+        }
+
+    return meta_info
 
 #%%
 def run(
@@ -464,6 +560,7 @@ def run(
     
     annotation_fasta_path = result_dir / ANNOTATION_FASTA
     ingroup_2ODD_fasta = config["annotate"]["ingroup"]
+    major_minor_2ODD_dict = config["annotate"]["major_minor_2ODD_ids"]
     annotation_msa_path = result_dir / ANNOTATION_MSA
     annotation_msa_trim_path = result_dir / ANNOTATION_MSA_TRIM
     annotation_tree_path = result_dir / ANNOTATION_TREE
@@ -489,9 +586,6 @@ def run(
     tax2names, tax2lineages, tax2rank = tree.annotate_ncbi_taxa(taxid_attr='species')
     tree.ladderize()  
 
-    major_minor_2ODD_clusters_path = config["annotate"]["major_minor_2ODD_clusters"]
-    with open(major_minor_2ODD_clusters_path) as f:
-        major_minor_2ODD_clusters = json.load(f)
 
 
 
