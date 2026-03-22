@@ -24,6 +24,7 @@ from two_odd_annotator.constants import (
 
 from two_odd_annotator.services.annotate import (
     reverse_major_minor_2ODD_dict,
+    split_seqs_by_2ODD_membership,
     assign_2ODD_props,
     assign_plant_group_props,
     create_annotation_fasta, 
@@ -120,10 +121,12 @@ t_char_2ODDs = PhyloTree(open(test_with_char_tree), sp_naming_function=lambda na
 tax2names, tax2lineages, tax2rank = t_char_2ODDs.annotate_ncbi_taxa(taxid_attr='species')
 
 def test_assign_2ODD_props():
+    candidate_headers, _ = split_seqs_by_2ODD_membership(seq_to_2ODD_id=seq_to_2ODD_id, tree=t_char_2ODDs)
+
     assign_2ODD_props(
         tree=t_char_2ODDs,
         seq_to_2ODD_id=seq_to_2ODD_id,
-        annotation_fasta=RESULTS_DIR / ANNOTATION_FASTA
+        candidate_headers=candidate_headers
     )
 
     assert t_char_2ODDs["PV023584__F3H__flavonoid_pathway__981085"].props["two_odd_id"] == "2ODD14"
@@ -141,7 +144,14 @@ def test_assign_plant_group_props():
 test_anno_tree_path = Path(__file__).parents[1] / "data" / "test_anno_tree.nwk"
 t = PhyloTree(open(test_anno_tree_path), sp_naming_function=lambda name: name.split('__')[-1])
 tax2names, tax2lineages, tax2rank = t.annotate_ncbi_taxa(taxid_attr='species')
-assign_2ODD_props(tree=t, seq_to_2ODD_id=seq_to_2ODD_id, annotation_fasta=RESULTS_DIR / ANNOTATION_FASTA)
+
+candidate_headers, ingroup_headers = split_seqs_by_2ODD_membership(seq_to_2ODD_id=seq_to_2ODD_id, tree=t)
+
+
+assign_2ODD_props(
+    tree=t, seq_to_2ODD_id=seq_to_2ODD_id, 
+    candidate_headers=candidate_headers
+)
 assign_plant_group_props(tree=t)
 assign_plant_group_props(tree=t)
 
@@ -1843,7 +1853,6 @@ def test_seq_id_to_landscape_idx():
     assert result == expected 
 
 
-
 def test_landscape_meta_info():
     manual_candidates = {
         "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
@@ -1870,7 +1879,9 @@ def test_landscape_meta_info():
     for leaf in t:
         if leaf.name in manual_candidates:
             leaf.props["two_odd_id"] = "candidate"
+    _, ingroup_headers = split_seqs_by_2ODD_membership(seq_to_2ODD_id=seq_to_2ODD_id, tree=t)
 
+    ingroup_headers = ingroup_headers - set(manual_candidates.keys())
     landscape_unresolved = get_landscape(t)
     resolved_landscape = resolve_candidates_in_landscape(landscape=landscape_unresolved, 
                                                             dist_dict=dist_dict, 
@@ -1878,97 +1889,82 @@ def test_landscape_meta_info():
     
     expected = {
         0: {'two_odd_id': '2ODD37',
-        'percentage_of_ingroup_2ODD': 0.539,
+        'percentage_of_ingroup_2ODD': 1.0,
         'num_sequences': 48,
         'plant_groups': ['Dicots'],
-        'contains_candidates': True,
-        'unresolved': False},
+        'contains_candidates': True},
         1: {'two_odd_id': 'minor_2ODD_cluster',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 4,
         'plant_groups': ['Dicots'],
-        'contains_candidates': True,
-        'unresolved': False},
+        'contains_candidates': True},
         2: {'two_odd_id': '2ODD41',
-        'percentage_of_ingroup_2ODD': 0.02,
+        'percentage_of_ingroup_2ODD': 0.078,
         'num_sequences': 8,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         3: {'two_odd_id': 'minor_2ODD_cluster',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 1,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         4: {'two_odd_id': '2ODD40',
-        'percentage_of_ingroup_2ODD': 0.215,
+        'percentage_of_ingroup_2ODD': 0.667,
         'num_sequences': 20,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         5: {'two_odd_id': 'minor_2ODD_cluster',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 9,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         6: {'two_odd_id': '2ODD40',
-        'percentage_of_ingroup_2ODD': 0.011,
+        'percentage_of_ingroup_2ODD': 0.033,
         'num_sequences': 1,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         7: {'two_odd_id': 'minor_2ODD_cluster',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 3,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         8: {'two_odd_id': '2ODD40',
-        'percentage_of_ingroup_2ODD': 0.097,
+        'percentage_of_ingroup_2ODD': 0.3,
         'num_sequences': 9,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         9: {'two_odd_id': '2ODD38',
-        'percentage_of_ingroup_2ODD': 0.239,
+        'percentage_of_ingroup_2ODD': 0.326,
         'num_sequences': 21,
         'plant_groups': ['Dicots'],
-        'contains_candidates': True,
-        'unresolved': False},
+        'contains_candidates': True},
         10: {'two_odd_id': 'minor_2ODD_cluster',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 24,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         11: {'two_odd_id': '2ODD39',
-        'percentage_of_ingroup_2ODD': 0.376,
+        'percentage_of_ingroup_2ODD': 1.0,
         'num_sequences': 79,
         'plant_groups': ['Dicots'],
-        'contains_candidates': True,
-        'unresolved': False},
+        'contains_candidates': True},
         12: {'two_odd_id': '2ODD38',
-        'percentage_of_ingroup_2ODD': 0.352,
+        'percentage_of_ingroup_2ODD': 0.674,
         'num_sequences': 31,
         'plant_groups': ['Dicots'],
-        'contains_candidates': False,
-        'unresolved': False},
+        'contains_candidates': False},
         13: {'two_odd_id': '2ODD41',
-        'percentage_of_ingroup_2ODD': 0.243,
+        'percentage_of_ingroup_2ODD': 0.922,
         'num_sequences': 95,
         'plant_groups': ['Dicots', 'Monocots'],
-        'contains_candidates': False,
-        'unresolved': False},
-        14: {'two_odd_id': None,
+        'contains_candidates': False},
+        14: {'two_odd_id': 'unresolved',
         'percentage_of_ingroup_2ODD': None,
         'num_sequences': 1,
         'plant_groups': ['Monocots'],
-        'contains_candidates': True,
-        'unresolved': True}
+        'contains_candidates': True}
         }
 
-    result = landscape_meta_info(resolved_landscape, major_minor_2ODDs_dict, manual_candidates)
+    result = landscape_meta_info(resolved_landscape, major_minor_2ODDs_dict,ingroup_headers, manual_candidates)
     assert result == expected
 

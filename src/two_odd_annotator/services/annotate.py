@@ -5,6 +5,7 @@ from Bio import SeqIO
 from pathlib import Path
 import json
 import numpy as np
+import pandas as pd
 
 from typing import Literal, Callable
 
@@ -104,20 +105,64 @@ def create_annotation_fasta(
                         seq_ids.add(record.id)
 
 
-def get_candidate_headers(
-        annotation_fasta: Path, 
-        seq_to_2ODD_id: dict[str, str]
-     ) -> set[str]:
+def split_seqs_by_2ODD_membership(
+    seq_to_2ODD_id: dict[str, str],
+    tree: Tree | PhyloTree | None = None,
+    fasta: Path | None = None,
+) -> tuple[set[str], set[str]]:
     """
-    Get all input sequences aka candidates that need to be annotated from the annotation fasta file.
-    This is done by checking which sequence headers in the annotation fasta file are not present in the seq_to_2ODD_id dictionary,
-    which contains the mapping of known 2ODD sequence headers to their corresponding 2ODD cluster IDs.
+    Split sequence IDs into candidate vs ingroup based on presence in seq_to_2ODD_id.
+
+    Supports either:
+    - a phylogenetic tree (uses leaf names)
+    - a FASTA file (uses record IDs)
+
+    Parameters
+    ----------
+    seq_to_2ODD_id : dict[str, str]
+        Mapping of known sequence IDs to 2ODD cluster IDs.
+
+    tree : Tree | PhyloTree, optional
+        Tree containing sequence leaves.
+
+    fasta : Path, optional
+        FASTA file containing sequences.
+
+    Returns
+    -------
+    tuple[set[str], set[str]]
+        (candidate_ids, ingroup_ids)
+
+    Raises
+    ------
+    ValueError
+        If neither or both of tree and fasta are provided.
     """
-    candidate_headers = set()
-    for record in SeqIO.parse(annotation_fasta, "fasta"):
-        if record.id not in seq_to_2ODD_id:
-            candidate_headers.add(record.id)
-    return candidate_headers
+
+    if (tree is None and fasta is None) or (tree is not None and fasta is not None):
+        raise ValueError("Provide exactly one of: tree OR fasta")
+
+    candidate_ids = set()
+    ingroup_ids = set()
+
+    # Case 1: Tree
+    if tree is not None:
+        for leaf in tree.leaves():
+            name = leaf.name
+            if name in seq_to_2ODD_id:
+                ingroup_ids.add(name)
+            else:
+                candidate_ids.add(name)
+
+    # Case 2: FASTA
+    else:
+        for record in SeqIO.parse(fasta, "fasta"):
+            if record.id in seq_to_2ODD_id:
+                ingroup_ids.add(record.id)
+            else:
+                candidate_ids.add(record.id)
+
+    return candidate_ids, ingroup_ids
 
 
 def from_fasta_to_nwk(
@@ -148,7 +193,7 @@ def from_fasta_to_nwk(
     
 def assign_2ODD_props(tree: Tree, 
                       seq_to_2ODD_id: dict[str, str], 
-                      annotation_fasta: Path
+                      candidate_headers: set[str]
                       ):
     """
     Take a ete4 Tree / PhyloTree and assign the 2ODD_id to leaf's properties. 
@@ -159,7 +204,6 @@ def assign_2ODD_props(tree: Tree,
 
     Return modified tree. 
     """
-    candidate_headers = get_candidate_headers(annotation_fasta, seq_to_2ODD_id)
 
     for leaf in tree.leaves():
 
@@ -390,7 +434,7 @@ def resolve_candidates_in_landscape(
 
     """
 
-    # Step 1: assign two_odd_ids without moving anything
+    # Step 1: assign targets without overwriting "candidate"
     for idx, cluster in enumerate(landscape):
 
         if cluster[0].props.get("two_odd_id") != "candidate":
@@ -421,20 +465,26 @@ def resolve_candidates_in_landscape(
                     best_dist = d
                     best_two_odd_id = downstream_cluster[0].props["two_odd_id"]
 
-            # assign
+            # assign WITHOUT overwriting candidate
             if best_dist <= threshold and best_two_odd_id is not None:
-                candidate.props["two_odd_id"] = best_two_odd_id
+                candidate.props["_assigned_two_odd_id"] = best_two_odd_id
             else:
                 candidate.props["two_odd_id"] = "unresolved"
+                candidate.props["_assigned_two_odd_id"] = None
 
-    # Step 2: rebuild landscape in order
+
+    # Step 2: rebuild landscape using assigned IDs (fallback to real ID)
     resolved_landscape = []
     current_cluster = []
     current_id = None
 
     for cluster in landscape:
         for node in cluster:
-            node_id = node.props["two_odd_id"]
+            node_id = (
+                node.props.get("_assigned_two_odd_id")
+                if node.props.get("two_odd_id") == "candidate"
+                else node.props.get("two_odd_id")
+            )
 
             if current_id is None:
                 current_id = node_id
@@ -477,7 +527,10 @@ def two_odd_id_to_landscape_indices(landscape: list[list[Tree | PhyloTree]]) -> 
     """
     id_to_indices = {}
     for idx, cluster in enumerate(landscape):
-        two_odd_id = cluster[0].props.get("two_odd_id")
+        two_odd_id = next(
+    (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
+    None
+)
         if two_odd_id not in id_to_indices:
             id_to_indices[two_odd_id] = []
         id_to_indices[two_odd_id].append(idx)
@@ -512,46 +565,118 @@ def seq_id_to_landscape_idx(landscape: list[list[Tree | PhyloTree]]) -> dict[str
 
 
 def landscape_meta_info(
-        landscape: list[list[Tree | PhyloTree]],
-        major_minor_2ODD_dict: dict[str, list[str]],
-        candidates: set[str]
-        ) -> dict[str, dict]:
+    landscape: list[list[Tree | PhyloTree]],
+    major_minor_2ODD_dict: dict[str, dict[str, list[str]]],
+    two_odd_ingroups: set[str],
+    candidates: set[str]
+) -> dict[int, dict]:
     """
-    Build a dictionary containing meta information about each cluster in the landscape, including:
-        - two_odd_id    
-        - percentage of ingroup 2ODD sequences covered (if applicable)
-        - number of sequences in the cluster
-        - plant groups represented in the cluster (e.g. algae, mosses, liverworts, ferns, gymnosperms, basal angiosperms, monocots, dicots)
-        - whether the cluster contains candidate sequences
-        - whether the cluster is unresolved (contains candidate sequences that could not be confidently assigned to a neighboring cluster)     
-               
+    Build metadata for each cluster in the landscape.
     """
 
     meta_info = {}
-    two_odd_id_to_size = {two_odd_id: len(seq_ids) for two_odd_id, seq_ids in major_minor_2ODD_dict.get("major_2ODDs", {}).items()}
+
+    # answering: how many sequences per 2ODD id were used as ingroup sequences for the annotation?
+    two_odd_to_ingroup_size = {}
+    for two_odd_id, seq_ids in major_minor_2ODD_dict.get("major_2ODDs", {}).items():
+        two_odd_to_ingroup_size[two_odd_id] = len(
+            {seq for seq in seq_ids if seq in two_odd_ingroups}
+        )
+
     for idx, cluster in enumerate(landscape):
 
-        two_odd_id = cluster[0].props.get("two_odd_id") if cluster[0].props.get("two_odd_id") != "unresolved" else None
+        cluster_id = next(
+    (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
+    None
+)
         size = len(cluster)
-        unresolved = True if bool(cluster[0].props.get("two_odd_id") == "unresolved") else False
+
+        is_unresolved = cluster_id == "unresolved"
 
         contains_candidates = any(node.name in candidates for node in cluster)
-        two_odd_ingroup_percentage_covered = np.round(size / two_odd_id_to_size[two_odd_id], 3) if two_odd_id != "minor_2ODD_cluster" and not unresolved else None
 
-        plant_groups = set(node.props.get("plant_group") for node in cluster if node.props.get("plant_group") is not None)
+        # default
+        percentage = None
+
+        if (
+            not is_unresolved
+            and cluster_id in two_odd_to_ingroup_size
+        ):
+            
+            # how many ingroup 2ODDs are in total in the tree?
+            total = two_odd_to_ingroup_size[cluster_id]
+
+            # how many ingroup sequences are in this landscape cluster?
+            ingroup_count = sum(
+                1 for node in cluster
+                if node.name in two_odd_ingroups and node.name not in candidates
+            )
+            print(f"Cluster {idx} (2ODD id: {cluster_id}) has {ingroup_count} ingroup sequences out of {total} total ingroup sequences for that 2ODD cluster.")
+            percentage = round(ingroup_count / total, 3)
+
+        plant_groups = {
+            node.props.get("plant_group")
+            for node in cluster
+            if node.props.get("plant_group") is not None
+        }
 
         meta_info[idx] = {
-            "two_odd_id": two_odd_id,
-            "percentage_of_ingroup_2ODD": two_odd_ingroup_percentage_covered,
+            "two_odd_id": cluster_id,
+            "percentage_of_ingroup_2ODD": percentage,
             "num_sequences": size,
             "plant_groups": sorted(plant_groups),
             "contains_candidates": contains_candidates,
-            "unresolved": unresolved
         }
 
     return meta_info
 
-#%%
+def landscape_meta_to_df(meta_info: dict[int, dict]) -> pd.DataFrame:
+    """
+    Convert landscape metadata dictionary into a pandas DataFrame.
+
+    Parameters
+    ----------
+    meta_info : dict[int, dict]
+        Output from `landscape_meta_info`, where keys are cluster indices
+        and values are metadata dictionaries.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with one row per cluster and columns:
+        - cluster_index
+        - two_odd_id
+        - percentage_of_ingroup_2ODD
+        - num_sequences
+        - plant_groups (comma-separated string)
+        - contains_candidates
+        - unresolved
+    """
+
+    rows = []
+
+    for idx, data in meta_info.items():
+        row = {
+            "cluster_index": idx,
+            "two_odd_id": data.get("two_odd_id"),
+            "percentage_of_ingroup_2ODD": data.get("percentage_of_ingroup_2ODD"),
+            "num_sequences": data.get("num_sequences"),
+            "plant_groups": ", ".join(data.get("plant_groups", [])),
+            "contains_candidates": data.get("contains_candidates"),
+            "unresolved": data.get("unresolved"),
+        }
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+
+    # optional: sort by cluster index for readability
+    df = df.sort_values("cluster_index").reset_index(drop=True)
+
+    return df
+
+
+
+#%%---------------------------------------------------------------
 def run(
         result_dir: Path, 
         config: dict, 
