@@ -320,205 +320,115 @@ def build_distance_lookup(tree):
     return dist
 
 
-def get_landscape(t: Tree | PhyloTree) -> list[list[Tree | PhyloTree]]:
+def get_clusters(t: Tree | PhyloTree) -> list[list[Tree | PhyloTree]]:
     """
-    Iterates over the leaves of the tree and groups them into sub-clusters based on their 'two_odd_id' property.
+    Extract maximal monophyletic clusters based on 'two_odd_id',
+    treating 'candidate' as transparent (ignored for identity, included in clusters).
 
-    Each tree node needs a 'two_odd_id' property.
-    This can be a 2ODD cluster id, a minor 2ODD cluster id or cluster id is 'candidate'. 
+    All leaves under a valid 2ODD clade are included, including edge candidates.
     """
-    leaves_list = list(t.leaves())
 
-    landscape = []
-    sub_cluster = [leaves_list[0]]
+    clusters = []
+    node_to_id = {}
 
-    # get two_odd_id of first leaf
-    last_two_odd_id = leaves_list[0].props["two_odd_id"]
-
-
-    for i in range(1, len(leaves_list)):
-        leaf = leaves_list[i]
-        current_two_odd_id = leaf.props["two_odd_id"]
-
-        if current_two_odd_id == last_two_odd_id:
-            sub_cluster.append(leaf)
+    # --- Step 1: bottom-up annotation (ignore candidates) ---
+    for node in t.traverse("postorder"):
+        if node.is_leaf:
+            node_id = node.props.get("two_odd_id")
         else:
-            landscape.append(sub_cluster)
-            sub_cluster = [leaf]
-            last_two_odd_id = current_two_odd_id
+            child_ids = {
+                node_to_id[child]
+                for child in node.children
+                if node_to_id[child] != "candidate"
+            }
 
-    # append the last sub_cluster
-    landscape.append(sub_cluster)
+            if len(child_ids) == 1:
+                node_id = next(iter(child_ids))  # pure real clade
+            elif len(child_ids) == 0:
+                node_id = "candidate"  # only candidates below
+            else:
+                node_id = None  # mixed real IDs
 
+        node_to_id[node] = node_id
 
-    return landscape
+    assigned = set()
 
-    
-        
-def resolve_candidates_in_landscape(
-    landscape: list[list[Tree | PhyloTree]],
-    dist_dict: dict[str, dict[str, float]],
-    threshold: float
-) -> list[list[Tree | PhyloTree]]:
-    """
-    Resolve candidate nodes in a linearized phylogenetic landscape (result of get_landscape function) 
-    by assigning them to the closest neighboring 2ODD cluster, while preserving the original leaf order.
+    # --- Step 2: extract maximal real clades ---
+    for node in t.traverse("preorder"):
+        node_id = node_to_id[node]
 
-
-    Parameters
-    ----------
-    landscape : list[list[Tree | PhyloTree]]
-        Ordered list of clusters. Each cluster is a list of tree nodes. Each node must have:
-            - node.name : str
-            - node.props["two_odd_id"] : str
-        Cluster IDs are expected to be:
-            - "candidate" which indicate user input sequences that need to be annotated
-            - a 2ODD cluster ID (e.g. "2ODD01" or "mindor_2ODD_cluster")
-    
-    dist_dict : dict[str, dict[str, float]]
-        Nested dictionary containing pairwise distances between sequences:
-            dist_dict[seqA][seqB] = distance
-
-    threshold : float
-        Maximum distance allowed for assigning a candidate to a cluster.
-        If the closest distance exceeds this threshold, the candidate is marked as "unresolved".
-
-    Returns
-    -------
-    list[list[Tree | PhyloTree]]
-        A new landscape where:
-            - candidate nodes are assigned to neighboring clusters or marked as "unresolved"
-            - clusters are rebuilt as contiguous blocks of nodes sharing the same two_odd_id
-            - leaf order is preserved
-
-    Algorithm
-    ---------
-    For each candidate node:
-        1. Identify upstream cluster (previous in landscape, if any)
-        2. Identify downstream cluster (next in landscape, if any)
-        3. Compute distance to:
-            - last node of upstream cluster
-            - first node of downstream cluster
-        4. Select the closest cluster
-        5. If distance <= threshold:
-               assign candidate to that cluster (via two_odd_id)
-           else:
-               assign "unresolved"
-
-    After assignment:
-        - Iterate through all nodes in original order
-        - Group adjacent nodes with identical two_odd_id into new clusters
-
-    Example
-    -------
-    Input landscape:
-        [
-            [candidate1, candidate2],
-            [A1, A2],                  # two_odd_id = "2ODD01"
-            [candidate3, candidate4],
-            [B1, B2, B3]              # two_odd_id = "2ODD02"
-        ]
-
-    Suppose:
-        - candidate2 is close to 2ODD01 → assigned to "2ODD01"
-        - candidate3 is also closest to 2ODD01 → assigned to "2ODD01"
-        - candidate4 is closest to 2ODD02 → assigned to "2ODD02"
-        - candidate1 exceeds threshold → "unresolved"
-
-    Resulting landscape (order preserved, clusters rebuilt):
-        [
-            [candidate1],                          # unresolved
-            [candidate2, A1, A2, candidate3],      # 2ODD01
-            [candidate4, B1, B2, B3]               # 2ODD02
-        ]
-
-    """
-
-    # Step 1: assign targets without overwriting "candidate"
-    for idx, cluster in enumerate(landscape):
-
-        if cluster[0].props.get("two_odd_id") != "candidate":
+        # skip non-real clades
+        if node_id is None or node_id == "candidate":
             continue
 
-        upstream_cluster = landscape[idx - 1] if idx > 0 else None
-        downstream_cluster = landscape[idx + 1] if idx < len(landscape) - 1 else None
+        parent = node.up
+        parent_id = node_to_id.get(parent) if parent else None
 
-        for candidate in cluster:
-            name = candidate.name
+        # maximal clade condition
+        if node_id != parent_id:
+            leaves = list(node.leaves())
+            clusters.append(leaves)
+            assigned.update(leaves)
 
-            best_two_odd_id = None
-            best_dist = float("inf")
+    # --- Step 3: leftover candidates (not inside any real clade) ---
+    for leaf in t.leaves():
+        if leaf not in assigned:
+            clusters.append([leaf])
 
-            # upstream
-            if upstream_cluster:
-                up_name = upstream_cluster[-1].name
-                d = dist_dict[name][up_name]
-                if d < best_dist:
-                    best_dist = d
-                    best_two_odd_id = upstream_cluster[0].props["two_odd_id"]
+    # --- Step 4: sort by leaf order ---
+    leaf_order = {leaf: i for i, leaf in enumerate(t.leaves())}
+    clusters.sort(key=lambda c: min(leaf_order[l] for l in c))
 
-            # downstream
-            if downstream_cluster:
-                down_name = downstream_cluster[0].name
-                d = dist_dict[name][down_name]
-                if d < best_dist:
-                    best_dist = d
-                    best_two_odd_id = downstream_cluster[0].props["two_odd_id"]
-
-            # assign WITHOUT overwriting candidate
-            if best_dist <= threshold and best_two_odd_id is not None:
-                candidate.props["_assigned_two_odd_id"] = best_two_odd_id
-            else:
-                candidate.props["two_odd_id"] = "unresolved"
-                candidate.props["_assigned_two_odd_id"] = None
+    return clusters
 
 
-    # Step 2: rebuild landscape using assigned IDs (fallback to real ID)
-    resolved_landscape = []
-    current_cluster = []
-    current_id = None
+def compute_cluster_neighbors(clusters, dist_dict):
+    neighbors = {}
 
-    for cluster in landscape:
-        for node in cluster:
-            node_id = (
-                node.props.get("_assigned_two_odd_id")
-                if node.props.get("two_odd_id") == "candidate"
-                else node.props.get("two_odd_id")
-            )
+    for i, cluster_a in enumerate(clusters):
+        best_dist = float("inf")
+        best_j = None
 
-            if current_id is None:
-                current_id = node_id
-                current_cluster = [node]
+        for j, cluster_b in enumerate(clusters):
+            if i == j:
                 continue
 
-            if node_id == current_id:
-                current_cluster.append(node)
-            else:
-                resolved_landscape.append(current_cluster)
-                current_cluster = [node]
-                current_id = node_id
+            min_dist = min(
+                dist_dict[a.name][b.name]
+                for a in cluster_a
+                for b in cluster_b
+            )
 
-    if current_cluster:
-        resolved_landscape.append(current_cluster)
+            # strictly better OR tie → pick smaller index
+            if (min_dist < best_dist) or (
+                min_dist == best_dist and (best_j is None or j < best_j)
+            ):
+                best_dist = min_dist
+                best_j = j
 
-    return resolved_landscape
+        neighbors[f"{i}"] = {
+            "closest_cluster": best_j,
+            "distance": round(best_dist, 3)
+        }
+
+    return neighbors
 
 
 
-def two_odd_id_to_landscape_indices(landscape: list[list[Tree | PhyloTree]]) -> dict[str, list[int]]:
+def two_odd_id_to_cluster_indices(clusters: list[list[Tree | PhyloTree]]) -> dict[str, list[int]]:
     """
-    Build a dictionary mapping each two_odd_id to the list of landscape indices where it occurs.
+    Build a dictionary mapping each two_odd_id to the list of cluster indices where it occurs.
 
     Parameters
     ----------
-    landscape : list[list[Tree | PhyloTree]]
+    clusters : list[list[Tree | PhyloTree]]
         Ordered list of clusters. Each cluster is a list of tree nodes. Each node must have:
             - node.props["two_odd_id"] : str
 
     Returns
     -------
     dict[str, list[int]]
-        Dictionary mapping each two_odd_id to the list of landscape indices where it occurs.
+        Dictionary mapping each two_odd_id to the list of cluster indices where it occurs.
         e.g. {
             "2ODD01": [0, 1],
             "2ODD02": [2],
@@ -526,30 +436,32 @@ def two_odd_id_to_landscape_indices(landscape: list[list[Tree | PhyloTree]]) -> 
         }
     """
     id_to_indices = {}
-    for idx, cluster in enumerate(landscape):
+    for idx, cluster in enumerate(clusters):
         two_odd_id = next(
     (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
-    None
+    "candidates_only"
 )
         if two_odd_id not in id_to_indices:
             id_to_indices[two_odd_id] = []
         id_to_indices[two_odd_id].append(idx)
     return id_to_indices
 
-def seq_id_to_landscape_idx(landscape: list[list[Tree | PhyloTree]]) -> dict[str, int]:
+
+
+def seq_to_cluster_idx(clusters: list[list[Tree | PhyloTree]]) -> dict[str, int]:
     """
-    Build a dictionary mapping each sequence ID to its corresponding landscape index.
+    Build a dictionary mapping each sequence ID to its corresponding cluster index.
 
     Parameters
     ----------
-    landscape : list[list[Tree | PhyloTree]]
+    clusters : list[list[Tree | PhyloTree]]
         Ordered list of clusters. Each cluster is a list of tree nodes. Each node must have:
             - node.name : str
 
     Returns
     -------
     dict[str, int]
-        Dictionary mapping each sequence ID to its corresponding landscape index.
+        Dictionary mapping each sequence ID to its corresponding cluster index.
         e.g. {
             "seqA": 0,
             "seqB": 1,
@@ -557,88 +469,88 @@ def seq_id_to_landscape_idx(landscape: list[list[Tree | PhyloTree]]) -> dict[str
         }
     """
     seq_id_to_idx = {}
-    for idx, cluster in enumerate(landscape):
+    for idx, cluster in enumerate(clusters):
         for node in cluster:
             seq_id_to_idx[node.name] = idx
     return seq_id_to_idx
 
 
 
-def landscape_meta_info(
-    landscape: list[list[Tree | PhyloTree]],
+def cluster_meta_info(
+    clusters: list[list[Tree | PhyloTree]],
     major_minor_2ODD_dict: dict[str, dict[str, list[str]]],
     two_odd_ingroups: set[str],
     candidates: set[str]
 ) -> dict[int, dict]:
     """
-    Build metadata for each cluster in the landscape.
+    Build metadata for each cluster in the clusters.
     """
 
     meta_info = {}
 
-    # answering: how many sequences per 2ODD id were used as ingroup sequences for the annotation?
+    # total ingroup size per 2ODD
     two_odd_to_ingroup_size = {}
     for two_odd_id, seq_ids in major_minor_2ODD_dict.get("major_2ODDs", {}).items():
         two_odd_to_ingroup_size[two_odd_id] = len(
             {seq for seq in seq_ids if seq in two_odd_ingroups}
         )
 
-    for idx, cluster in enumerate(landscape):
+    for idx, cluster in enumerate(clusters):
 
         cluster_id = next(
-    (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
-    None
-)
-        size = len(cluster)
+            (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
+            "candidates_only"
+        )
 
-        is_unresolved = cluster_id == "unresolved"
+        num_candidates = sum(1 for node in cluster if node.name in candidates)
 
-        contains_candidates = any(node.name in candidates for node in cluster)
+        num_ingroup_2ODD = sum(
+            1 for node in cluster
+            if node.name in two_odd_ingroups and node.name not in candidates
+        )
 
-        # default
+        # --- percentage ---
         percentage = None
 
         if (
-            not is_unresolved
-            and cluster_id in two_odd_to_ingroup_size
+            num_ingroup_2ODD > 0 and cluster_id in two_odd_to_ingroup_size
         ):
-            
-            # how many ingroup 2ODDs are in total in the tree?
             total = two_odd_to_ingroup_size[cluster_id]
 
-            # how many ingroup sequences are in this landscape cluster?
-            ingroup_count = sum(
-                1 for node in cluster
-                if node.name in two_odd_ingroups and node.name not in candidates
-            )
-            print(f"Cluster {idx} (2ODD id: {cluster_id}) has {ingroup_count} ingroup sequences out of {total} total ingroup sequences for that 2ODD cluster.")
-            percentage = round(ingroup_count / total, 3)
+            percentage = round(num_ingroup_2ODD / total, 3)
 
+        # --- plant groups ---
         plant_groups = {
             node.props.get("plant_group")
             for node in cluster
             if node.props.get("plant_group") is not None
         }
 
-        meta_info[idx] = {
+        meta_info[f"{idx}"] = {
             "two_odd_id": cluster_id,
             "percentage_of_ingroup_2ODD": percentage,
-            "num_sequences": size,
+            "num_ingroup_2ODD": num_ingroup_2ODD,
+            "num_candidates": num_candidates,
             "plant_groups": sorted(plant_groups),
-            "contains_candidates": contains_candidates,
         }
 
     return meta_info
 
-def landscape_meta_to_df(meta_info: dict[int, dict]) -> pd.DataFrame:
+
+
+
+def clusters_meta_to_df(meta_info: dict[str, dict], neighboring_clusters: dict[int, tuple[int, float]]) -> pd.DataFrame:
     """
-    Convert landscape metadata dictionary into a pandas DataFrame.
+    Convert clusters metadata dictionary into a pandas DataFrame.
 
     Parameters
     ----------
-    meta_info : dict[int, dict]
-        Output from `landscape_meta_info`, where keys are cluster indices
+    meta_info : dict[str, dict]
+        Output from `clusters_meta_info`, where keys are cluster indices
         and values are metadata dictionaries.
+
+    neighboring_clusters : dict[int, tuple[int, float]]
+        Dictionary mapping each cluster index to a tuple of its neighboring cluster index and distance.
 
     Returns
     -------
@@ -646,24 +558,26 @@ def landscape_meta_to_df(meta_info: dict[int, dict]) -> pd.DataFrame:
         DataFrame with one row per cluster and columns:
         - cluster_index
         - two_odd_id
-        - percentage_of_ingroup_2ODD
-        - num_sequences
+        - perc_of_ingroup_2ODD
+        - n_ingroup_2ODD
+        - n_candidates
         - plant_groups (comma-separated string)
-        - contains_candidates
-        - unresolved
+        - neighboring_cluster_idx
+        - neighboring_cluster_dist
     """
 
     rows = []
 
     for idx, data in meta_info.items():
         row = {
-            "cluster_index": idx,
+            "cluster_index": int(idx),
             "two_odd_id": data.get("two_odd_id"),
-            "percentage_of_ingroup_2ODD": data.get("percentage_of_ingroup_2ODD"),
-            "num_sequences": data.get("num_sequences"),
+            "perc_of_ingroup_2ODD": data.get("percentage_of_ingroup_2ODD"),
+            "n_ingroup_2ODD": data.get("num_ingroup_2ODD"),
+            "n_candidates": data.get("num_candidates"),
             "plant_groups": ", ".join(data.get("plant_groups", [])),
-            "contains_candidates": data.get("contains_candidates"),
-            "unresolved": data.get("unresolved"),
+            "neighboring_cluster_idx": int(neighboring_clusters[idx]["closest_cluster"]),
+            "neighboring_cluster_dist": neighboring_clusters[idx]["distance"]
         }
         rows.append(row)
 
@@ -673,6 +587,7 @@ def landscape_meta_to_df(meta_info: dict[int, dict]) -> pd.DataFrame:
     df = df.sort_values("cluster_index").reset_index(drop=True)
 
     return df
+
 
 
 

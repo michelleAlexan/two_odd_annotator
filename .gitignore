@@ -209,3 +209,7 @@ __marimo__/
 
 # vsc
 .vscode/
+
+
+# test results folder
+tests/results/
