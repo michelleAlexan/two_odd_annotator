@@ -42,6 +42,10 @@ parameters:
 
 annotate:
   ingroup: "data/2ODDs/2ODD_ingroup.fasta"
-  major_char_2ODD_info: "data/2ODDs/major_char_2ODD_info_dict.json" 
+  major_2ODDs_functional_characterization: "data/2ODDs/major_2ODD_char_info.json" 
   major_minor_2ODD_ids: "data/2ODDs/major_minor_2ODD_ids_manual.json"
+  save_tree: true # whether to save the annotated tree as a Newick file with cluster annotations in the node labels
 
+visualize: 
+  save_plots: true # whether to generate visualizations phylogenetic tree and heatmap showing the distribution of 2ODD candidates across taxa
+  heatmap_taxa_rank: "family" # can be "order", "family", "genus", or "species" 
