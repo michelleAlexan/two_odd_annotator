@@ -41,7 +41,7 @@ parameters:
     N: 1
 
 annotate:
-  ingroup: "data/2ODDs/2ODD_ingroup.fasta"
+  bait_sequence_collection: "data/2ODDs/bait_sequence_collection.fasta"
   major_2ODDs_functional_characterization: "data/2ODDs/major_2ODD_char_info.json" 
   major_minor_2ODD_ids: "data/2ODDs/major_minor_2ODD_ids_manual.json"
   save_tree: true # whether to save the annotated tree as a Newick file with cluster annotations in the node labels
