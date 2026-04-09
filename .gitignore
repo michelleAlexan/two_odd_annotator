@@ -212,4 +212,4 @@ __marimo__/
 
 
 # test results folder
-tests/results/
+tests/.results/

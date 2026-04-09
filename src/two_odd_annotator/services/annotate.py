@@ -14,8 +14,7 @@ from bio_tools.msa.mafft import run_mafft, trim_msa_by_gap_fraction
 from bio_tools.phylo.fasttree import run_fasttree
 from bio_tools.viz.tree import (
     explore_tree_plant_groups,
-    load_treecluster_assignments, 
-    explore_tree_cluster_clades
+    explore_2ODD_IDs
     )
 
 

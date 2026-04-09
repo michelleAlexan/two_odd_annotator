@@ -1,15 +1,13 @@
 #%%
 import json
 
-import pytest
+
 from pathlib import Path
-import random
-from ete4 import PhyloTree, Tree
+from ete4 import PhyloTree
 
 from bio_tools.viz.tree import (
     explore_tree_plant_groups,
-    load_treecluster_assignments, 
-    explore_tree_cluster_clades
+    explore_2ODD_IDs
     )
 
 
@@ -37,7 +35,7 @@ from two_odd_annotator.services.annotate import (
     cluster_meta_info)
 
 
-RESULTS_DIR = Path(__file__).parents[1] /  "results" 
+RESULTS_DIR = Path(__file__).parents[1] /  ".results" 
 
 config = load_config(Path(__file__).parents[2] / DEFAULT_CONFIG_PATH)
 config["annotate"]["ingroup"] = Path(__file__).parents[2] / "data" / "2ODDs" / "characterized_2ODDs.fasta"
@@ -46,6 +44,41 @@ major_minor_2ODDs_path = Path(__file__).parents[2] / "data" / "2ODDs" / "major_m
 major_minor_2ODDs_dict = json.load(open(major_minor_2ODDs_path))
 
 seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict=major_minor_2ODDs_dict)
+
+def compare_nested_lists(result, expected):
+    """
+    Compare two lists of lists and print detailed differences.
+    """
+    print("Comparing nested lists...\n")
+    max_len = max(len(result), len(expected))
+    
+    for i in range(max_len):
+        try:
+            r = result[i]
+        except IndexError:
+            print(f"Result missing list at index {i}: expected {expected[i]}")
+            continue
+        try:
+            e = expected[i]
+        except IndexError:
+            print(f"Expected missing list at index {i}: result has {r}")
+            continue
+        
+        if r != e:
+            print(f"Difference at sublist index {i}:")
+            print(f"  Result:   {r}")
+            print(f"  Expected: {e}")
+            # Check element-wise
+            min_len = min(len(r), len(e))
+            for j in range(min_len):
+                if r[j] != e[j]:
+                    print(f"    Element {j} differs: result={r[j]}, expected={e[j]}")
+            # Extra elements
+            if len(r) > len(e):
+                print(f"    Extra elements in result: {r[min_len:]}")
+            if len(e) > len(r):
+                print(f"    Missing elements in result: {e[min_len:]}")
+    print("\nComparison complete.")
 
 
 
@@ -131,7 +164,7 @@ def test_assign_2ODD_props():
         candidate_headers=candidate_headers
     )
 
-    assert t_char_2ODDs["PV023584__F3H__flavonoid_pathway__981085"].props["two_odd_id"] == "2ODD14"
+    assert t_char_2ODDs["PV023584__F3H__flavonoid_pathway__981085"].props["two_odd_id"] == "2ODD15"
     assert t_char_2ODDs["sp|Q96323.1_ANS_Arabidopsis_thaliana__3702"].props["two_odd_id"] == "candidate"
 
 def test_assign_plant_group_props():
@@ -152,16 +185,16 @@ assign_2ODD_props(
     candidate_headers=candidate_headers
 )
 assign_plant_group_props(tree=t)
-# explore_tree_cluster_clades(t)
+# explore_2ODD_IDs(t)
 
 
 
 expected_clusters_without_candidates = [
     [
-        t["lcl_NC_084852.1_cds_XP_061960601.1_3168__3691"] # 2ODD41
+        t["lcl_NC_084852.1_cds_XP_061960601.1_3168__3691"] # 2ODD38
     ], 
     [
-        t["rna-XM_031626300.2__210225"], # 2ODD37
+        t["rna-XM_031626300.2__210225"], # 2ODD34
     ], 
     [
         t["CKAN_00595100__337451"], 
@@ -224,13 +257,13 @@ expected_clusters_without_candidates = [
         t["pveT_jg20220.t1__170927"],
     ], 
     [
-        t["Acc09929.1__3625"], # 2ODD37
+        t["Acc09929.1__3625"], # 2ODD34
     ], 
     [
         t["pveT_jg33784.t1__170927"] # minor 2ODD cluster
     ], 
     [
-        t['Eucgr.C03724.1__71139'], # 2ODD41
+        t['Eucgr.C03724.1__71139'], # 2ODD38
         t['lcl_NC_045130.1_cds_XP_031390300.1_19564__22663'],
         t['Eucgr.C04147.1__71139'],
     ], 
@@ -247,7 +280,7 @@ expected_clusters_without_candidates = [
         t['Lj7A541T77.1__105884'] # minor 2ODD cluster
     ],
     [
-        t['Pg_S7309.1__4054'],  # 2ODD40
+        t['Pg_S7309.1__4054'],  # 2ODD34
         t['DCAR_015859__4039'],
     ], 
     [
@@ -284,7 +317,7 @@ expected_clusters_without_candidates = [
         t['CM008280.1.CM008280.1.g987.t1__62330']
     ], 
     [
-        t['pveT_jg9723.t1__170927'] # 2ODD40
+        t['pveT_jg9723.t1__170927'] # 2ODD34
     ],
     [
         t["Cc06_g15940.1__49390"], # minor 2ODD cluster
@@ -294,7 +327,7 @@ expected_clusters_without_candidates = [
         t["lcl_OX459118.1_cds_CAI9089985.1_2909__43536"],
     ],
     [
-        t['TRINITY_DN197356_c3_g1_i1__4102'], # 2ODD40
+        t['TRINITY_DN197356_c3_g1_i1__4102'], # 2ODD34
         t['lcl_CM061488.1_cds_KAK1430368.1_13046__13708'],
         t['Oeu000043.1__4146'],
         t['lcl_NW_026137546.1_cds_XP_051123007.1_5823__175694'],
@@ -306,18 +339,20 @@ expected_clusters_without_candidates = [
     ],
     [
         t["lcl_NC_031989.1_cds_XP_019252277.1_2282__49451"], # minor 2ODD cluster
-    ],
-    [
         t["Kaladp0011s0492.1.v1.1__63787"],
     ], 
     [
-        t['lcl_OX459121.1_cds_CAI9101307.1_14231__43536'], # 2ODD40
+        t['lcl_OX459121.1_cds_CAI9101307.1_14231__43536'], # 2ODD34
         t['rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058'], 
-        t['lcl_NC_039901.1_cds_XP_027112943.1_15453__13443'],
-        t["rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058"]
     ], 
     [
-        t['lcl_NC_080155.1_cds_XP_057473373.1_43266__165200'], # 2ODD38
+        t['lcl_NC_039901.1_cds_XP_027112943.1_15453__13443'],
+    ], 
+    [
+        t["rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058"] # minor 2ODD cluster
+    ], 
+    [
+        t['lcl_NC_080155.1_cds_XP_057473373.1_43266__165200'], # 2ODD35
         t['Hma1.2p1_1763F.1_g301360.1__23110'],
         t['pveT_jg21836.t1__170927'],
         t['Lj5A64G50.1__105884'],
@@ -364,7 +399,7 @@ expected_clusters_without_candidates = [
         t['Blora12794.1__200023']
     ], 
     [
-        t['VIT_209s0002g05340.1__29760'], # 2ODD39
+        t['VIT_209s0002g05340.1__29760'], # 2ODD36
         t['lcl_NW_017353139.1_cds_XP_018486826.1_3787__3726'],
         t['lcl_NC_045129.1_cds_XP_031385398.1_13438__22663'],
         t['lcl_JAGHRR010000128.1_cds_KAI3418995.1_3930__120290'],
@@ -449,7 +484,7 @@ expected_clusters_without_candidates = [
         t['lcl_NC_044908.1_cds_XP_030968569.1_22136__97700']
  ], 
  [
-        t['lcl_PKPP01002761.1_cds_PWA73280.1_26522__35608'], # 2ODD38
+        t['lcl_PKPP01002761.1_cds_PWA73280.1_26522__35608'], # 2ODD35
         t['rna-gnl_WGS-JAMLDZ_EVM0012381.1__4058'],
         t['lcl_CM028334.1.g446.t1__4392'],
         t['Lj5A64T53.1__105884'],
@@ -482,7 +517,7 @@ expected_clusters_without_candidates = [
         t['lcl_NW_026137587.1_cds_XP_051135915.1_16702__175694']
     ], 
     [
-        t['lcl_CM008454.1_cds_PHT32940.1_29277__33114'], # 2ODD41
+        t['lcl_CM008454.1_cds_PHT32940.1_29277__33114'], # 2ODD38
         t['lcl_CM008444.1_cds_PHT55775.1_4261__33114'],
         t['TRINITY_DN232929_c4_g6_i3__4102'],
         t['lcl_CM008445.1_cds_PHT51893.1_6355__33114'],
@@ -606,7 +641,7 @@ expected_clusters_with_candidates = [
         t["lcl_NC_084852.1_cds_XP_061960601.1_3168__3691"] # candidate
     ], 
     [
-        t["rna-XM_031626300.2__210225"], # 2ODD37
+        t["rna-XM_031626300.2__210225"], # 2ODD34
     ], 
     [
         t["CKAN_00595100__337451"], 
@@ -671,7 +706,7 @@ expected_clusters_with_candidates = [
         t["pveT_jg33784.t1__170927"] # minor 2ODD cluster
     ], 
     [
-        t['Eucgr.C03724.1__71139'], # 2ODD41
+        t['Eucgr.C03724.1__71139'], # 2ODD38
         t['lcl_NC_045130.1_cds_XP_031390300.1_19564__22663'],
         t['Eucgr.C04147.1__71139'],
     ], 
@@ -688,7 +723,7 @@ expected_clusters_with_candidates = [
         t['Lj7A541T77.1__105884'] # minor 2ODD cluster
     ],
     [
-        t['Pg_S7309.1__4054'],  # 2ODD40
+        t['Pg_S7309.1__4054'],  # 2ODD34
         t['DCAR_015859__4039'],
     ], 
     [
@@ -725,7 +760,7 @@ expected_clusters_with_candidates = [
         t['CM008280.1.CM008280.1.g987.t1__62330']
     ], 
     [
-        t['pveT_jg9723.t1__170927'] # 2ODD40
+        t['pveT_jg9723.t1__170927'] # 2ODD34
     ],
     [
         t["Cc06_g15940.1__49390"], # minor 2ODD cluster
@@ -735,7 +770,7 @@ expected_clusters_with_candidates = [
         t["lcl_OX459118.1_cds_CAI9089985.1_2909__43536"],
     ],
     [
-        t['TRINITY_DN197356_c3_g1_i1__4102'], # 2ODD40
+        t['TRINITY_DN197356_c3_g1_i1__4102'], # 2ODD34
         t['lcl_CM061488.1_cds_KAK1430368.1_13046__13708'],
         t['Oeu000043.1__4146'],
         t['lcl_NW_026137546.1_cds_XP_051123007.1_5823__175694'],
@@ -752,7 +787,7 @@ expected_clusters_with_candidates = [
         t['rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058'], # candidate
         t['lcl_NC_039901.1_cds_XP_027112943.1_15453__13443'],# candidate
         t["rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058"],# candidate
-        t['lcl_NC_080155.1_cds_XP_057473373.1_43266__165200'], # 2ODD38
+        t['lcl_NC_080155.1_cds_XP_057473373.1_43266__165200'], # 2ODD35
         t['Hma1.2p1_1763F.1_g301360.1__23110'],
         t['pveT_jg21836.t1__170927'],
         t['Lj5A64G50.1__105884'],
@@ -799,7 +834,7 @@ expected_clusters_with_candidates = [
         t['Blora12794.1__200023']
     ], 
     [
-        t['VIT_209s0002g05340.1__29760'], # 2ODD39
+        t['VIT_209s0002g05340.1__29760'], # 2ODD36
         t['lcl_NW_017353139.1_cds_XP_018486826.1_3787__3726'],
         t['lcl_NC_045129.1_cds_XP_031385398.1_13438__22663'],
         t['lcl_JAGHRR010000128.1_cds_KAI3418995.1_3930__120290'],
@@ -884,7 +919,7 @@ expected_clusters_with_candidates = [
         t['lcl_NC_044908.1_cds_XP_030968569.1_22136__97700']
     ], 
     [
-        t['lcl_PKPP01002761.1_cds_PWA73280.1_26522__35608'], # 2ODD38
+        t['lcl_PKPP01002761.1_cds_PWA73280.1_26522__35608'], # 2ODD35
         t['rna-gnl_WGS-JAMLDZ_EVM0012381.1__4058'],
         t['lcl_CM028334.1.g446.t1__4392'],
         t['Lj5A64T53.1__105884'],
@@ -917,7 +952,7 @@ expected_clusters_with_candidates = [
         t['lcl_NW_026137587.1_cds_XP_051135915.1_16702__175694'],
     ], 
     [
-        t['lcl_CM008454.1_cds_PHT32940.1_29277__33114'], # 2ODD41
+        t['lcl_CM008454.1_cds_PHT32940.1_29277__33114'], # 2ODD38
         t['lcl_CM008444.1_cds_PHT55775.1_4261__33114'],
         t['TRINITY_DN232929_c4_g6_i3__4102'],
         t['lcl_CM008445.1_cds_PHT51893.1_6355__33114'],
@@ -1018,24 +1053,24 @@ expected_clusters_with_candidates = [
 
 def test_clusters_with_candidates():
     manual_candidates = {
-    "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
-    'VIT_204s0008g04920.2__29760' : '2ODD37',
-    'Ptrif.0001s0318.1__37690' : '2ODD37', 
-    'Atru_chr7_2342__47965' : '2ODD37',
-    'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD37',
-    'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD37',
-    'GWHTACBH000860__413952' : '2ODD37',
-    'Potri.006G248000.1__3694' : '2ODD37',
-    'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD37',
-    'Lus10008097_PACid-23169790__4006' : '2ODD37', 
+    "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+    'VIT_204s0008g04920.2__29760' : '2ODD34',
+    'Ptrif.0001s0318.1__37690' : '2ODD34', 
+    'Atru_chr7_2342__47965' : '2ODD34',
+    'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+    'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+    'GWHTACBH000860__413952' : '2ODD34',
+    'Potri.006G248000.1__3694' : '2ODD34',
+    'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+    'Lus10008097_PACid-23169790__4006' : '2ODD34', 
     'Acc09929.1__3625': "minor_2ODD_cluster",
-    'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD38",
-    'Kaladp0011s0492.1.v1.1__63787': "2ODD38",
-    'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD38",
-    'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD38",
-    'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD38",
-    'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD38", 
-    'Bol038153__3712': "2ODD39",
+    'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+    'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+    'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+    'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+    'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+    'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+    'Bol038153__3712': "2ODD36",
     "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
     }
 
@@ -1063,11 +1098,11 @@ assign_plant_group_props(tree=t_nested)
 dist_dict_nested = build_distance_lookup(t_nested)
 
 
-# explore_tree_cluster_clades(t_nested)
+# explore_2ODD_IDs(t_nested)
 #%%
 
 def test_get_clusters_nested_without_candidates():
-    manual_nested_seqs_11B = [
+    manual_nested_seqs_12B = [
         t_nested['Vradi08g06870.1__157791'],
         t_nested['Medtr1g070135.1__3880'],
         t_nested['Ler.1DRT.1g071540.1__41257'],
@@ -1078,17 +1113,17 @@ def test_get_clusters_nested_without_candidates():
         t_nested['Medtr1g070085.3__3880'],
     ]
 
-    manual_nested_seqs_11A = [
+    manual_nested_seqs_12A = [
         t_nested['Cc01_g06970.1__49390'],
         t_nested['Cc01_g09870.1__49390'],
         t_nested['rna-gnl_WGS-JAMLDZ_EVM0004127.1__4058'],
     ]
 
     for leaf in t_nested:
-        if leaf in manual_nested_seqs_11B:
-            leaf.props["two_odd_id"] = "2ODD11B"
-        elif leaf in manual_nested_seqs_11A:
-            leaf.props["two_odd_id"] = "2ODD11A"
+        if leaf in manual_nested_seqs_12B:
+            leaf.props["two_odd_id"] = "2ODD12B"
+        elif leaf in manual_nested_seqs_12A:
+            leaf.props["two_odd_id"] = "2ODD12A"
 
     expected_clusters_nestd_without_candidates = [
 
@@ -1209,7 +1244,7 @@ def test_get_clusters_nested_without_candidates():
             t_nested['ASH_rna19788__1088818'],
         ],
         [
-            t_nested['Vradi08g06870.1__157791'], # manually added nested 2ODD11B within 2ODD11
+            t_nested['Vradi08g06870.1__157791'], # manually added nested 2ODD12B within 2ODD12
             t_nested['Medtr1g070135.1__3880'],
             t_nested['Ler.1DRT.1g071540.1__41257'],
             t_nested['Medtr1g070120.1__3880'],
@@ -1238,7 +1273,7 @@ def test_get_clusters_nested_without_candidates():
 #%%
 
 def test_get_clusters_nested_with_candidates():
-    manual_nested_seqs_11B = [
+    manual_nested_seqs_12B = [
         t_nested['Vradi08g06870.1__157791'],
         t_nested['Medtr1g070135.1__3880'],
         t_nested['Ler.1DRT.1g071540.1__41257'],
@@ -1249,37 +1284,37 @@ def test_get_clusters_nested_with_candidates():
         t_nested['Medtr1g070085.3__3880'],
     ]
 
-    manual_nested_seqs_11A = [
+    manual_nested_seqs_12A = [
         t_nested['Cc01_g06970.1__49390'],
         t_nested['Cc01_g09870.1__49390'],
         t_nested['rna-gnl_WGS-JAMLDZ_EVM0004127.1__4058'],
     ]
 
     for leaf in t_nested:
-        if leaf in manual_nested_seqs_11B:
-            leaf.props["two_odd_id"] = "2ODD11B"
-        elif leaf in manual_nested_seqs_11A:
-            leaf.props["two_odd_id"] = "2ODD11A"
+        if leaf in manual_nested_seqs_12B:
+            leaf.props["two_odd_id"] = "2ODD12B"
+        elif leaf in manual_nested_seqs_12A:
+            leaf.props["two_odd_id"] = "2ODD12A"
 
     manual_candidates = {
-        'Sspon.04G0019940-2D-mRNA-1__62335': "2ODD11B",
-        'p5.00_sc00134_p0038.1__51953': "2ODD11B",
-        'ASH_rna19788__1088818': "2ODD11B",
-        "Ler.1DRT.1g071570.1__41257": "2ODD11B",
-        "Medtr1g070080.1__3880": "2ODD11B",
-        "Soltu.DM.06G028900.1__4113": "2ODD11",
-        'rna-gnl_WGS-JAMLDZ_EVM0022992.1__4058': "2ODD11",
-        "EF187826__H6H__scopolamine_biosynthesis__402998": "2ODD11A",
-        'EF442802__H6H__scopolamine_biosynthesis__448155': "2ODD11A",
-        'lcl_CM059870.1_cds_KAK0581506.1_15868__4024': "2ODD11",
-        'lcl_NW_006262339.1_cds_XP_024044614.1_12214__85681': "2ODD11",
-        'Thecc.01G260000.1__3641': "2ODD11",
-        'Dglom04181.1__34297': "2ODD11",
-        'Blora11689.1__200023': "2ODD11",
-        'Qurub.09G177400.1__3512': "2ODD11",
-        'lcl_NC_083387.1_cds_XP_015891362.3_28814__326968': "2ODD11",
-        'lcl_NC_083604.1_cds_XP_030498241.2_17670__3483': "2ODD11",
-        'Casgl158S09588__3522': "2ODD11",
+        'Sspon.04G0019940-2D-mRNA-1__62335': "2ODD12B",
+        'p5.00_sc00134_p0038.1__51953': "2ODD12B",
+        'ASH_rna19788__1088818': "2ODD12B",
+        "Ler.1DRT.1g071570.1__41257": "2ODD12B",
+        "Medtr1g070080.1__3880": "2ODD12B",
+        "Soltu.DM.06G028900.1__4113": "2ODD12",
+        'rna-gnl_WGS-JAMLDZ_EVM0022992.1__4058': "2ODD12",
+        "EF187826__H6H__scopolamine_biosynthesis__402998": "2ODD12A",
+        'EF442802__H6H__scopolamine_biosynthesis__448155': "2ODD12A",
+        'lcl_CM059870.1_cds_KAK0581506.1_15868__4024': "2ODD12",
+        'lcl_NW_006262339.1_cds_XP_024044614.1_12214__85681': "2ODD12",
+        'Thecc.01G260000.1__3641': "2ODD12",
+        'Dglom04181.1__34297': "2ODD12",
+        'Blora11689.1__200023': "2ODD12",
+        'Qurub.09G177400.1__3512': "2ODD12",
+        'lcl_NC_083387.1_cds_XP_015891362.3_28814__326968': "2ODD12",
+        'lcl_NC_083604.1_cds_XP_030498241.2_17670__3483': "2ODD12",
+        'Casgl158S09588__3522': "2ODD12",
     }
 
     for leaf in t_nested:
@@ -1404,7 +1439,7 @@ def test_get_clusters_nested_with_candidates():
             t_nested['ASH_rna19788__1088818'],
         ],
         [
-            t_nested['Vradi08g06870.1__157791'], # manually added nested 2ODD11B within 2ODD11
+            t_nested['Vradi08g06870.1__157791'], # manually added nested 2ODD12B within 2ODD12
             t_nested['Medtr1g070135.1__3880'],
             t_nested['Ler.1DRT.1g071540.1__41257'],
             t_nested['Medtr1g070120.1__3880'],
@@ -1479,24 +1514,24 @@ def test_compute_cluster_neighbors():
                 '28': {'closest_cluster': 9, 'distance': 1.177}}
     
     manual_candidates = {
-    "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
-    'VIT_204s0008g04920.2__29760' : '2ODD37',
-    'Ptrif.0001s0318.1__37690' : '2ODD37', 
-    'Atru_chr7_2342__47965' : '2ODD37',
-    'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD37',
-    'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD37',
-    'GWHTACBH000860__413952' : '2ODD37',
-    'Potri.006G248000.1__3694' : '2ODD37',
-    'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD37',
-    'Lus10008097_PACid-23169790__4006' : '2ODD37', 
+    "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+    'VIT_204s0008g04920.2__29760' : '2ODD34',
+    'Ptrif.0001s0318.1__37690' : '2ODD34', 
+    'Atru_chr7_2342__47965' : '2ODD34',
+    'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+    'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+    'GWHTACBH000860__413952' : '2ODD34',
+    'Potri.006G248000.1__3694' : '2ODD34',
+    'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+    'Lus10008097_PACid-23169790__4006' : '2ODD34', 
     'Acc09929.1__3625': "minor_2ODD_cluster",
-    'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD38",
-    'Kaladp0011s0492.1.v1.1__63787': "2ODD38",
-    'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD38",
-    'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD38",
-    'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD38",
-    'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD38", 
-    'Bol038153__3712': "2ODD39",
+    'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+    'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+    'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+    'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+    'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+    'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+    'Bol038153__3712': "2ODD36",
     "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
     }
 
@@ -1515,24 +1550,24 @@ def test_compute_cluster_neighbors():
 
 def test_two_odd_id_to_landscape_indices():
     manual_candidates = {
-        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
-        'VIT_204s0008g04920.2__29760' : '2ODD37',
-        'Ptrif.0001s0318.1__37690' : '2ODD37',
-        'Atru_chr7_2342__47965' : '2ODD37',
-        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD37',
-        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD37',
-        'GWHTACBH000860__413952' : '2ODD37',
-        'Potri.006G248000.1__3694' : '2ODD37',
-        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD37',
-        'Lus10008097_PACid-23169790__4006' : '2ODD37', 
+        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+        'VIT_204s0008g04920.2__29760' : '2ODD34',
+        'Ptrif.0001s0318.1__37690' : '2ODD34',
+        'Atru_chr7_2342__47965' : '2ODD34',
+        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+        'GWHTACBH000860__413952' : '2ODD34',
+        'Potri.006G248000.1__3694' : '2ODD34',
+        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+        'Lus10008097_PACid-23169790__4006' : '2ODD34', 
         'Acc09929.1__3625': "minor_2ODD_cluster",
-        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD38",
-        'Kaladp0011s0492.1.v1.1__63787': "2ODD38",
-        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD38",
-        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD38", 
-        'Bol038153__3712': "2ODD39",
+        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+        'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+        'Bol038153__3712': "2ODD36",
         "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
         }
 
@@ -1543,12 +1578,12 @@ def test_two_odd_id_to_landscape_indices():
     clusters = get_clusters(t)
 
     expected = {'candidates_only': [0],
-                '2ODD37': [1, 2, 3, 4, 5, 6],
+                '2ODD34': [1, 2, 3, 4, 5, 6],
                 'minor_2ODD_cluster': [7, 11, 15, 17, 18, 21, 22, 23],
-                '2ODD41': [8, 9, 10, 28],
-                '2ODD40': [12, 13, 14, 16, 19],
-                '2ODD38': [20, 27],
-                '2ODD39': [24, 25, 26]}
+                '2ODD38': [8, 9, 10, 28],
+                '2ODD37': [12, 13, 14, 16, 19],
+                '2ODD35': [20, 27],
+                '2ODD36': [24, 25, 26]}
 
     result = two_odd_id_to_cluster_indices(clusters)
     assert result == expected
@@ -1557,24 +1592,24 @@ def test_two_odd_id_to_landscape_indices():
 def test_seq_to_cluster_idx():
 
     manual_candidates = {
-        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
-        'VIT_204s0008g04920.2__29760' : '2ODD37',
-        'Ptrif.0001s0318.1__37690' : '2ODD37',
-        'Atru_chr7_2342__47965' : '2ODD37',
-        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD37',
-        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD37',
-        'GWHTACBH000860__413952' : '2ODD37',
-        'Potri.006G248000.1__3694' : '2ODD37',
-        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD37',
-        'Lus10008097_PACid-23169790__4006' : '2ODD37', 
+        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+        'VIT_204s0008g04920.2__29760' : '2ODD34',
+        'Ptrif.0001s0318.1__37690' : '2ODD34',
+        'Atru_chr7_2342__47965' : '2ODD34',
+        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+        'GWHTACBH000860__413952' : '2ODD34',
+        'Potri.006G248000.1__3694' : '2ODD34',
+        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+        'Lus10008097_PACid-23169790__4006' : '2ODD34', 
         'Acc09929.1__3625': "minor_2ODD_cluster",
-        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD38",
-        'Kaladp0011s0492.1.v1.1__63787': "2ODD38",
-        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD38",
-        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD38", 
-        'Bol038153__3712': "2ODD39",
+        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+        'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+        'Bol038153__3712': "2ODD36",
         "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
         }
 
@@ -1945,24 +1980,24 @@ def test_seq_to_cluster_idx():
 
 def test_landscape_meta_info():
     manual_candidates = {
-        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD37",
-        'VIT_204s0008g04920.2__29760' : '2ODD37',
-        'Ptrif.0001s0318.1__37690' : '2ODD37',
-        'Atru_chr7_2342__47965' : '2ODD37',
-        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD37',
-        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD37',
-        'GWHTACBH000860__413952' : '2ODD37',
-        'Potri.006G248000.1__3694' : '2ODD37',
-        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD37',
-        'Lus10008097_PACid-23169790__4006' : '2ODD37', 
+        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+        'VIT_204s0008g04920.2__29760' : '2ODD34',
+        'Ptrif.0001s0318.1__37690' : '2ODD34',
+        'Atru_chr7_2342__47965' : '2ODD34',
+        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+        'GWHTACBH000860__413952' : '2ODD34',
+        'Potri.006G248000.1__3694' : '2ODD34',
+        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+        'Lus10008097_PACid-23169790__4006' : '2ODD34', 
         'Acc09929.1__3625': "minor_2ODD_cluster",
-        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD38",
-        'Kaladp0011s0492.1.v1.1__63787': "2ODD38",
-        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD38",
-        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD38",
-        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD38", 
-        'Bol038153__3712': "2ODD39",
+        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+        'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+        'Bol038153__3712': "2ODD36",
         "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
         }
 
@@ -1980,32 +2015,32 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 0,
                 'num_candidates': 1,
                 'plant_groups': ['Dicots']},
-                '1': {'two_odd_id': '2ODD37',
+                '1': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.026,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
                 'plant_groups': ['Basal Angiosperms']},
-                '2': {'two_odd_id': '2ODD37',
+                '2': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.237,
                 'num_ingroup_2ODD': 9,
                 'num_candidates': 0,
                 'plant_groups': ['Basal Angiosperms','Dicots']},
-                '3': {'two_odd_id': '2ODD37',
+                '3': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.026,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
                 'plant_groups': ['Basal Angiosperms']},
-                '4': {'two_odd_id': '2ODD37',
+                '4': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.026,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '5': {'two_odd_id': '2ODD37',
+                '5': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.105,
                 'num_ingroup_2ODD': 4,
                 'num_candidates': 0,
                 'plant_groups': ['Basal Angiosperms','Dicots']},
-                '6': {'two_odd_id': '2ODD37',
+                '6': {'two_odd_id': '2ODD34',
                 'percentage_of_ingroup_2ODD': 0.579,
                 'num_ingroup_2ODD': 22,
                 'num_candidates': 9,
@@ -2015,17 +2050,17 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 3,
                 'num_candidates': 1,
                 'plant_groups': ['Dicots']},
-                '8': {'two_odd_id': '2ODD41',
+                '8': {'two_odd_id': '2ODD38',
                 'percentage_of_ingroup_2ODD': 0.029,
                 'num_ingroup_2ODD': 3,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '9': {'two_odd_id': '2ODD41',
+                '9': {'two_odd_id': '2ODD38',
                 'percentage_of_ingroup_2ODD': 0.039,
                 'num_ingroup_2ODD': 4,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '10': {'two_odd_id': '2ODD41',
+                '10': {'two_odd_id': '2ODD38',
                 'percentage_of_ingroup_2ODD': 0.01,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
@@ -2035,17 +2070,17 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '12': {'two_odd_id': '2ODD40',
+                '12': {'two_odd_id': '2ODD37',
                 'percentage_of_ingroup_2ODD': 0.067,
                 'num_ingroup_2ODD': 2,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '13': {'two_odd_id': '2ODD40',
+                '13': {'two_odd_id': '2ODD37',
                 'percentage_of_ingroup_2ODD': 0.033,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '14': {'two_odd_id': '2ODD40',
+                '14': {'two_odd_id': '2ODD37',
                 'percentage_of_ingroup_2ODD': 0.567,
                 'num_ingroup_2ODD': 17,
                 'num_candidates': 0,
@@ -2055,7 +2090,7 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 9,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '16': {'two_odd_id': '2ODD40',
+                '16': {'two_odd_id': '2ODD37',
                 'percentage_of_ingroup_2ODD': 0.033,
                 'num_ingroup_2ODD': 1,
                 'num_candidates': 0,
@@ -2070,12 +2105,12 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 2,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '19': {'two_odd_id': '2ODD40',
+                '19': {'two_odd_id': '2ODD37',
                 'percentage_of_ingroup_2ODD': 0.3,
                 'num_ingroup_2ODD': 9,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '20': {'two_odd_id': '2ODD38',
+                '20': {'two_odd_id': '2ODD35',
                 'percentage_of_ingroup_2ODD': 0.326,
                 'num_ingroup_2ODD': 15,
                 'num_candidates': 6,
@@ -2095,27 +2130,27 @@ def test_landscape_meta_info():
                 'num_ingroup_2ODD': 6,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '24': {'two_odd_id': '2ODD39',
+                '24': {'two_odd_id': '2ODD36',
                 'percentage_of_ingroup_2ODD': 0.628,
                 'num_ingroup_2ODD': 49,
                 'num_candidates': 1,
                 'plant_groups': ['Dicots']},
-                '25': {'two_odd_id': '2ODD39',
+                '25': {'two_odd_id': '2ODD36',
                 'percentage_of_ingroup_2ODD': 0.333,
                 'num_ingroup_2ODD': 26,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '26': {'two_odd_id': '2ODD39',
+                '26': {'two_odd_id': '2ODD36',
                 'percentage_of_ingroup_2ODD': 0.038,
                 'num_ingroup_2ODD': 3,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '27': {'two_odd_id': '2ODD38',
+                '27': {'two_odd_id': '2ODD35',
                 'percentage_of_ingroup_2ODD': 0.674,
                 'num_ingroup_2ODD': 31,
                 'num_candidates': 0,
                 'plant_groups': ['Dicots']},
-                '28': {'two_odd_id': '2ODD41',
+                '28': {'two_odd_id': '2ODD38',
                 'percentage_of_ingroup_2ODD': 0.922,
                 'num_ingroup_2ODD': 95,
                 'num_candidates': 1,
