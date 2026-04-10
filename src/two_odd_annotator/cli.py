@@ -47,6 +47,13 @@ def main():
     )
 
     parser.add_argument(
+        "--step",
+        choices=["all", "filter_seq_sim", "annotate", "visualize"],
+        default="all",
+        help="Which pipeline step to run. Default is 'all' for the full pipeline; choose 'filter_seq_sim', 'annotate', or 'visualize' to run individual steps."
+    )
+
+    parser.add_argument(
         "--sp-name-mapping",
         help="Override config: path to json file mapping incorrect species names to correct ones." \
         "This is useful when mapping species names to the NCBI taxonomy id fails."
@@ -92,6 +99,7 @@ def main():
         compute_plots=args.compute_plots.lower() == "true" if args.compute_plots else None,
         seq_len_thresh=args.seq_len_thresh,
         delete_intermediate_files=args.delete_intermediate_files.lower() == "true" if args.delete_intermediate_files else None,
+        step=args.step,
     )
 
     pipeline.run()

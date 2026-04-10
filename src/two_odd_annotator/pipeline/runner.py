@@ -39,7 +39,8 @@ class Runner:
             seq_sim_method: str | None = None,
             compute_plots: bool | None = None,
             seq_len_thresh: str | None = None, 
-            delete_intermediate_files: bool | None = None
+            delete_intermediate_files: bool | None = None,
+            step: str | None = None,
         ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
@@ -65,6 +66,11 @@ class Runner:
         if delete_intermediate_files is not None:
             self.config["pipeline"]["delete_intermediate_files"] = delete_intermediate_files
 
+        # which part of the pipeline to run
+        # "all" (default) runs the full pipeline; otherwise one of
+        # "filter_seq_sim", "annotate", or "visualize"
+        self.step = step or "all"
+
         # initialize the pipeline run by creating a state object.
         # State tracks initializes output directory and subdirectories,
         # validates input files, 
@@ -84,36 +90,56 @@ class Runner:
 
         start = timeit.default_timer()
 
-        for subdir, metadata in self.state.metadata.items():
-            subdir = self.state.output_base_dir / subdir
-            cleaned_fasta_path = metadata["cleaned_fasta_path"]
+        # 1) sequence similarity filtering
+        if self.step in ("all", "filter_seq_sim"):
+            for subdir, metadata in self.state.metadata.items():
+                subdir_path = self.state.output_base_dir / subdir
+                cleaned_fasta_path = metadata["cleaned_fasta_path"]
 
-            seq_sim_filter.run(
-                input_path = cleaned_fasta_path, 
-                subdir = subdir, 
-                config = self.config, 
-                seq_sim_method = self.config["pipeline"]["seq_sim_method"]
+                method = self.config["pipeline"]["seq_sim_method"]
+
+                # special mode: run all three methods sequentially
+                if method == "all":
+                    for m in ("diamond", "hmmer", "blastp"):
+                        seq_sim_filter.run(
+                            input_path=cleaned_fasta_path,
+                            subdir=subdir_path,
+                            config=self.config,
+                            seq_sim_method=m,
+                        )
+                else:
+                    seq_sim_filter.run(
+                        input_path=cleaned_fasta_path,
+                        subdir=subdir_path,
+                        config=self.config,
+                        seq_sim_method=method,
+                    )
+
+        # 2) phylogenetic annotation
+        if self.step in ("all", "annotate"):
+            if self.config["pipeline"]["reuse_existing"] and self.state.annotation_steps_completed["annotation_csv"]:
+                print("Reusing existing annotation results...")
+            else:
+                annotate.run(
+                    result_dir=self.state.output_base_dir,
+                    config=self.config,
+                    seq_sim_method=self.config["pipeline"]["seq_sim_method"],
+                    completed_annotation_steps=self.state.annotation_steps_completed,
                 )
 
-
-        # After all species have been pre-filtered, run the phylogenetic annotation
-        if self.config["pipeline"]["reuse_existing"] and self.state.annotation_steps_completed["annotation_csv"]:
-            print("Reusing existing annotation results...")
-        else:
-            annotate.run(
-                result_dir=self.state.output_base_dir,
-                config=self.config,
-                seq_sim_method=self.config["pipeline"]["seq_sim_method"],
-                completed_annotation_steps=self.state.annotation_steps_completed,
-            )
-
-        # Visualization service is currently a placeholder; enable once implemented.
-        # if self.config["pipeline"].get("compute_plots"):
-        #     vizualize.run(self.state.output_base_dir, self.config)
+        # 3) visualization (optional / placeholder for now)
+        if self.step in ("all", "visualize"):
+            if self.config["pipeline"].get("compute_plots"):
+                if hasattr(vizualize, "run"):
+                    vizualize.run(self.state.output_base_dir, self.config)
+                else:
+                    print("Visualization step is not implemented yet.")
 
         elapsed = (timeit.default_timer() - start) / 60
 
-        if self.config["pipeline"].get("delete_intermediate_files"):
+        # only delete intermediate annotation files if we actually ran
+        # the annotation step in this invocation
+        if self.step in ("all", "annotate") and self.config["pipeline"].get("delete_intermediate_files"):
             print(f"Deleting intermediate annotation files: {ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE}...")
             # delete intermediate files (ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE)
             # that are found in the output directory (results folder)

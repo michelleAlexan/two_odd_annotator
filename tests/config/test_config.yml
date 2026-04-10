@@ -1,0 +1,51 @@
+pipeline:
+  reuse_existing: true # whether to reuse existing intermediate files if they exist, 
+                              # set to false to force re-running all steps of the pipeline
+
+  sp_name_mapping: "configs/sp_name_correction.json" # path to JSON file mapping species names in input FASTA headers to corrected names.
+                                                  # this is needed, e.g.,  when the latin species name does not map to a taxonomic ID in the NCBI taxonomy database
+
+  seq_sim_method: "hmmer"  # default method for sequence similarity filtering, 
+                              # choices are "diamond", "hmmer", "blastp" 
+  compute_plots: false # whether to compute summary plots at the end of the pipeline run
+
+  seq_len_thresh: 100 # the length of the candidate sequence must be within +/- 100 amino acids of the median 2ODD sequence length of 349 aa. 
+                      # if set to null, no length filtering will be applied.
+  delete_intermediate_files: false # whether to delete intermediate files (ALIGNMENT_FASTA, ALIGNMENT_MSA, ALIGNMENT_MSA_TRIM, ALIGNMENT_TREE)
+
+filter_tools:
+  blastp:
+    reference_db: "data/2ODDs/blast_ref_db/2ODD_ref_db"
+
+  diamond:
+    reference_db: "data/2ODDs/dmnd_ref_db"  
+
+  hmmer:
+    domain_model: "data/2ODDs/2ODD_domain.hmm"
+
+
+parameters:
+  threads: 8
+  thresholds_alignment:
+    evalue: 1e-5
+    pident: 15.0
+    length: 80
+    bitscore: 40
+    num_hits: 100
+  
+  thresholds_hmmer:
+    full_Evalue: 1e-5
+    bestdom_Evalue: 1e-5
+    full_score: 50
+    bestdom_score: 50
+    N: 1
+
+annotate:
+  bait_sequence_collection: "data/2ODDs/characterized_2ODDs.fasta"
+  major_2ODDs_functional_characterization: "tests/config/major_2ODD_char_info.json" 
+  major_minor_2ODD_ids: "tests/config/major_minor_2ODD_ids_manual.json"
+  save_tree: true # whether to save the annotated tree as a Newick file with cluster annotations in the node labels
+
+visualize: 
+  save_plots: true # whether to generate visualizations phylogenetic tree and heatmap showing the distribution of 2ODD candidates across taxa
+  heatmap_taxa_rank: "family" # can be "order", "family", "genus", or "species" 

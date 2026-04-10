@@ -40,9 +40,9 @@ from two_odd_annotator.services.annotate import (
 RESULTS_DIR = Path(__file__).parents[1] /  ".results" 
 
 config = load_config(Path(__file__).parents[2] / DEFAULT_CONFIG_PATH)
-config["annotate"]["ingroup"] = Path(__file__).parents[2] / "data" / "2ODDs" / "characterized_2ODDs.fasta"
+config["annotate"]["bait_sequence_collection"] = Path(__file__).parents[2] / "data" / "2ODDs" / "characterized_2ODDs.fasta"
 
-major_minor_2ODDs_path = Path(__file__).parents[2] / "data" / "2ODDs" / "major_minor_2ODD_ids_manual.json"
+major_minor_2ODDs_path = Path(__file__).parents[1] /"config" / "major_minor_2ODD_ids_manual.json"
 major_minor_2ODDs_dict = json.load(open(major_minor_2ODDs_path))
 
 seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict=major_minor_2ODDs_dict)
@@ -119,7 +119,7 @@ def test_create_annotation_fasta():
     
     create_annotation_fasta(
         results_dir=RESULTS_DIR,
-        ingroup_2ODD_fasta=config["annotate"]["ingroup"],
+        ingroup_2ODD_fasta=config["annotate"]["bait_sequence_collection"],
         output_fasta=RESULTS_DIR / ANNOTATION_FASTA,
         seq_sim_method="hmmer"
     )
@@ -147,6 +147,14 @@ def test_from_fasta_to_nwk():
 
 
 # %% test assign props functions
+
+create_annotation_fasta(
+    results_dir=RESULTS_DIR,
+    ingroup_2ODD_fasta=config["annotate"]["bait_sequence_collection"],
+    output_fasta=RESULTS_DIR / ANNOTATION_FASTA,
+    seq_sim_method="hmmer"
+    )
+
 from_fasta_to_nwk(fasta_path=RESULTS_DIR / ANNOTATION_FASTA,
                     msa_path=RESULTS_DIR / ANNOTATION_MSA,
                     msa_trim_path=RESULTS_DIR / ANNOTATION_MSA_TRIM,

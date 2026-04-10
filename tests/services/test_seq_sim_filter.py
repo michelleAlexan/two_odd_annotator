@@ -7,6 +7,7 @@ from two_odd_annotator.constants import DEFAULT_CONFIG_PATH
 
 TEST_INPUT_DIR = Path(__file__).parents[1] / "data" 
 
+test_config_path = Path(__file__).parents[1] / "config" / "test_config.yml"
 
 
 expected_arabidposis_filtered_2ODD_fasta = """>sp|Q96323.1_ANS_Arabidopsis_thaliana__3702
@@ -46,6 +47,9 @@ def test_all_filter_methods(tmp_path):
             output_base_dir=output_dir,
             seq_sim_method=method,
             reuse_existing=False,  # force re-run of all steps for testing purposes
+            config_path=test_config_path,
+            step="filter_seq_sim"
+
         )
 
         pipline.run()
@@ -67,6 +71,8 @@ def test_seq_len_thresh_default_100(tmp_path):
         input_path=test_fasta_path,
         output_base_dir=tmp_path / "results", 
         seq_sim_method="diamond",
+        config_path=test_config_path,
+        step="filter_seq_sim"
     )
     pipline.run()
 
@@ -89,7 +95,10 @@ def test_seq_len_thresh_override(tmp_path):
         input_path=test_fasta_path,
         output_base_dir=tmp_path / "results",
         seq_sim_method="diamond",
-        seq_len_thresh=200
+        seq_len_thresh=200,
+        config_path=test_config_path,
+        step="filter_seq_sim"
+
     )
     pipline.run()
 
@@ -106,7 +115,9 @@ def test_seq_len_thresh_no_filtering(tmp_path):
         input_path=test_fasta_path,
         output_base_dir=tmp_path / "results",
         seq_sim_method="diamond",
-        seq_len_thresh=-1
+        seq_len_thresh=-1,
+        step="filter_seq_sim",
+        config_path=test_config_path
     )
     pipline.run()
 

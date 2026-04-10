@@ -135,7 +135,12 @@ class State:
         Check which steps have been completed based on the presence of expected output files.
         """
         pipeline_steps = {
-            "seq_sim_filter": None, # can be populated with a list of the filtering methods ["diamond", "hmmer", "blastp"]
+            # can be populated with a list of the filtering methods
+            # ["diamond", "hmmer", "blastp"]; annotation/visualize are
+            # currently not tracked per-subdir but kept for API compatibility
+            "seq_sim_filter": None,
+            "annotate": None,
+            "visualize": None,
         }
 
         expected_files_diamond = [DIAMOND_RESULTS, FILTERED_DIAMOND_HITS, FILTERED_DIAMOND_FASTA]

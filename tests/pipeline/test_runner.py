@@ -3,18 +3,33 @@ import pytest
 from pathlib import Path
 from two_odd_annotator.pipeline.runner import Runner
 
+from two_odd_annotator.constants import (
+    DIAMOND_RESULTS ,
+    HMMER_RESULTS,
+    BLASTP_RESULTS,
+
+    FILTERED_DIAMOND_HITS ,
+    FILTERED_HMMER_HITS,
+    FILTERED_BLASTP_HITS, 
+
+    FILTERED_DIAMOND_FASTA,
+    FILTERED_HMMER_FASTA,
+    FILTERED_BLASTP_FASTA,
+
+
+    ANNOTATION_CSV,
+    ANNOTATION_FASTA,
+    ANNOTATION_MSA,
+    ANNOTATION_MSA_TRIM,
+    ANNOTATION_TREE,
+)
+
 # under tests/data/ there are two test files
 test_data_path = Path(__file__).parents[1] / "data"
 # save the test run restults under tests/results
 test_results_path = Path(__file__).parents[1] / ".results"
 
-
-pipeline = Runner(
-    input_path=test_data_path,
-    output_base_dir=test_results_path,
-    reuse_existing=False,  # force re-run of all steps for testing purposes
-)
-pipeline.run()
+test_config_path = Path(__file__).parents[1] / "config" / "test_config.yml"
 
 
 
@@ -49,7 +64,8 @@ def test_runner_pipeline(tmp_path):
     runner = Runner(
         input_path=test_data_path,
         output_base_dir=output_dir,
-        seq_sim_method="diamond",
+        seq_sim_method="all",  # run all methods for testing purposes
+        config_path=test_config_path
     )
 
     runner.run()
@@ -71,6 +87,19 @@ def test_runner_pipeline(tmp_path):
         assert (sub / "metadata.yml").exists()
         assert (sub / f"clean_{sp}.fasta").exists()
         assert (sub / "clean_fasta_headers.json").exists()
-        assert (sub / "diamond_results.tsv").exists()
-        assert (sub / "filtered_diamond_hits.csv").exists()
-        assert (sub / "filtered_diamond.fasta").exists()
+        assert (sub / DIAMOND_RESULTS).exists()
+        assert (sub / FILTERED_DIAMOND_HITS).exists()
+        assert (sub / FILTERED_DIAMOND_FASTA).exists()
+        assert (sub / HMMER_RESULTS).exists()
+        assert (sub / FILTERED_HMMER_HITS).exists()
+        assert (sub / FILTERED_HMMER_FASTA).exists()
+        assert (sub / BLASTP_RESULTS).exists()
+        assert (sub / FILTERED_BLASTP_HITS).exists()
+        assert (sub / FILTERED_BLASTP_FASTA).exists()
+
+    # expected annotation results files
+    assert (output_dir / ANNOTATION_CSV).exists()
+    assert (output_dir / ANNOTATION_FASTA).exists()
+    assert (output_dir / ANNOTATION_MSA).exists()
+    assert (output_dir / ANNOTATION_MSA_TRIM).exists()
+    assert (output_dir / ANNOTATION_TREE).exists()

@@ -142,11 +142,12 @@ def create_annotation_fasta(
         filtered_fasta = FILTERED_DIAMOND_FASTA
     elif seq_sim_method == "blastp":
         filtered_fasta = FILTERED_BLASTP_FASTA
-    elif seq_sim_method == "all":
-        # any file called filtered....fasta
-        filtered_fasta = results_dir.glob("**/filtered_*.fasta")
-    else:
-        raise ValueError(f"Invalid seq_sim_method: {seq_sim_method}. Must be one of 'hmmer', 'diamond', 'blastp', or 'all'.")
+    elif seq_sim_method != "all":
+        # allow the special "all" mode, which is handled below when
+        # iterating over subdirectories; anything else is invalid
+        raise ValueError(
+            f"Invalid seq_sim_method: {seq_sim_method}. Must be one of 'hmmer', 'diamond', 'blastp', or 'all'."
+        )
     
 
     # collect and write all pre-filtered sequences into one fasta file for annotation
@@ -162,7 +163,14 @@ def create_annotation_fasta(
         # write candidate sequences that passed the pre-filtering step
         for subdir in results_dir.iterdir():
             if subdir.is_dir():
-                for fasta_file in subdir.glob(filtered_fasta):
+                # when seq_sim_method == "all", include any filtered_*.fasta file;
+                # otherwise, only include the file for the selected method
+                if seq_sim_method == "all":
+                    fasta_iter = subdir.glob("filtered_*.fasta")
+                else:
+                    fasta_iter = subdir.glob(filtered_fasta)
+
+                for fasta_file in fasta_iter:
                     for record in SeqIO.parse(fasta_file, "fasta"):
                         if record.id in seq_ids:
                             continue
@@ -845,7 +853,25 @@ def get_candidate_to_char_baits_df(
             "second_closest_char_bait_dist": dist_dict[candidate][closest_char_baits[1]] if len(closest_char_baits) > 1 else None
         }
 
-    df = pd.DataFrame.from_dict(candidate_char_baits_dict, orient="index").reset_index().rename(columns={"index": "candidate"})
+    # If there are no candidates, return an empty DataFrame with the
+    # expected schema so downstream merges on "cluster_idx" work.
+    if not candidate_char_baits_dict:
+        return pd.DataFrame(
+            columns=[
+                "candidate",
+                "cluster_idx",
+                "closest_char_bait",
+                "closest_char_bait_dist",
+                "second_closest_char_bait",
+                "second_closest_char_bait_dist",
+            ]
+        )
+
+    df = (
+        pd.DataFrame.from_dict(candidate_char_baits_dict, orient="index")
+        .reset_index()
+        .rename(columns={"index": "candidate"})
+    )
     return df
 
 

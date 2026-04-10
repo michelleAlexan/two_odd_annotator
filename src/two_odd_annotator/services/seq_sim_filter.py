@@ -229,7 +229,7 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
         (df["bestdom_Evalue"] <= thresholds["bestdom_Evalue"]) &
         (df["full_score"] >= thresholds["full_score"]) &
         (df["bestdom_score"] >= thresholds["bestdom_score"]) &
-        (df["N"] == thresholds["N"])
+        (df["N"] >= thresholds["N"])
     ].reset_index(drop=True)
 
     # Save CSV
