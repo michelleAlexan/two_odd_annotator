@@ -6,7 +6,7 @@ from two_odd_annotator.pipeline.runner import Runner
 # under tests/data/ there are two test files
 test_data_path = Path(__file__).parents[1] / "data"
 # save the test run restults under tests/results
-test_results_path = Path(__file__).parents[1] / "results"
+test_results_path = Path(__file__).parents[1] / ".results"
 
 
 pipeline = Runner(

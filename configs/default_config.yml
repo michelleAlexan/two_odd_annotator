@@ -11,7 +11,7 @@ pipeline:
 
   seq_len_thresh: 100 # the length of the candidate sequence must be within +/- 100 amino acids of the median 2ODD sequence length of 349 aa. 
                       # if set to null, no length filtering will be applied.
-
+  delete_intermediate_files: false # whether to delete intermediate files (ALIGNMENT_FASTA, ALIGNMENT_MSA, ALIGNMENT_MSA_TRIM, ALIGNMENT_TREE)
 
 filter_tools:
   blastp:

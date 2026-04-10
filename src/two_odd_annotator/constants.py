@@ -25,4 +25,4 @@ ANNOTATION_FASTA = "annotation.fasta"
 ANNOTATION_MSA = "annotation_msa.fasta"
 ANNOTATION_MSA_TRIM = "annotation_msa_trim.fasta"
 ANNOTATION_TREE = "annotation_tree.nwk"
-
+ANNOTATION_CSV = "annotation_results.csv"

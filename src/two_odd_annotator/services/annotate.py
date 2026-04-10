@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 import numpy as np
 import pandas as pd
+from collections import Counter
 
 import re
 from typing import Literal, Callable
@@ -25,7 +26,8 @@ from two_odd_annotator.constants import (
     ANNOTATION_FASTA,
     ANNOTATION_MSA, 
     ANNOTATION_MSA_TRIM,
-    ANNOTATION_TREE
+    ANNOTATION_TREE,
+    ANNOTATION_CSV
     )
 
 MAJOR_MINOR_2ODD_DICT = json.load(open(Path(__file__).parents[3] / "data/2ODDs/major_minor_2ODD_ids_manual.json"))
@@ -232,28 +234,39 @@ def from_fasta_to_nwk(
         fasta_path: Path, 
         msa_path: Path, 
         msa_trim_path: Path, 
-        tree_path: Path
+        tree_path: Path,
+        completed_msa: bool = False,
+        completed_msa_trim: bool = False,
+        completed_tree: bool = False
         ):
+    """
+    From a FASTA file, run MSA and tree building to produce a Newick tree for annotation.
+    If the MSA, trimmed MSA, or tree already exist (e.g. from a previous run), they will be reused.
+    """
     
     # run MSA
-    run_mafft(
-        input_fasta=fasta_path, 
-        output_fasta=msa_path
-        )
+    if not completed_msa:
+        run_mafft(
+            input_fasta=fasta_path, 
+            output_fasta=msa_path
+            )
     
     # trim MSA
-    trim_msa_by_gap_fraction(
-        input_alignment=msa_path,
-        output_alignment=msa_trim_path,
-        gap_threshold=0.9
-        )
+    if not completed_msa_trim:
+        trim_msa_by_gap_fraction(
+            input_alignment=msa_path,
+            output_alignment=msa_trim_path,
+            gap_threshold=0.9
+            )
 
     # run FastTree to build tree for annotation
-    run_fasttree(
-        input_alignment=msa_trim_path,
-        output_tree=tree_path
-        )
+    if not completed_tree:
+        run_fasttree(
+            input_alignment=msa_trim_path,
+            output_tree=tree_path
+            )
     
+
 def assign_2ODD_props(tree: Tree, 
                       seq_to_2ODD_id: dict[str, str]=SEQ_TO_2ODD_ID, 
                       candidate_headers: set[str]=set()
@@ -790,46 +803,210 @@ def clusters_meta_to_df(meta_info: dict[str, dict], neighboring_clusters: dict[i
     return df
 
 
+def get_candidate_to_char_baits_df(
+    candidate_headers, ingroup_headers, dist_dict, seq_id_to_idx_dict
+):
+    """
+    Assign each candidate sequence to its closest characterized bait sequences.
 
+    Parameters
+    ----------
+    candidate_headers : list of str
+        Candidate sequence headers.
+    ingroup_headers : list of str
+        All sequence headers in the ingroup tree.
+    dist_dict : dict of dict
+        dist_dict[candidate][bait] gives the distance between candidate and bait.
+    seq_id_to_idx_dict : dict
+        Mapping of sequence ID to cluster index.
+
+    Returns
+    -------
+    pd.DataFrame
+        Each row is a candidate sequence with cluster index, closest and second closest
+        characterized bait, and corresponding distances.
+    """
+    # get characterized baits
+    char_baits = [h for h in ingroup_headers if is_char_bait_sequence(h)]
+
+    candidate_char_baits_dict = {}
+    for candidate in candidate_headers:
+        # sort closest baits by distance
+        closest_char_baits = sorted(
+            char_baits,
+            key=lambda bait: dist_dict[candidate][bait]
+        )[:3]
+
+        candidate_char_baits_dict[candidate] = {
+            "cluster_idx": seq_id_to_idx_dict.get(candidate, None),
+            "closest_char_bait": closest_char_baits[0] if closest_char_baits else None,
+            "closest_char_bait_dist": dist_dict[candidate][closest_char_baits[0]] if closest_char_baits else None,
+            "second_closest_char_bait": closest_char_baits[1] if len(closest_char_baits) > 1 else None,
+            "second_closest_char_bait_dist": dist_dict[candidate][closest_char_baits[1]] if len(closest_char_baits) > 1 else None
+        }
+
+    df = pd.DataFrame.from_dict(candidate_char_baits_dict, orient="index").reset_index().rename(columns={"index": "candidate"})
+    return df
+
+
+
+def add_consensus_annotations(df, threshold=0.9, min_size=2):
+    """
+    Add consensus function and pathway columns based on characterized bait sequences.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Must contain column 'associated_characterized_bait_sequences' (list of strings).
+    threshold : float
+        Fraction required for consensus (default: 0.9).
+    min_size : int
+        Minimum number of sequences required (default: 2).
+
+    Returns
+    -------
+    pd.DataFrame
+        With added columns:
+        - consensus_function
+        - consensus_pathway
+    """
+
+    def get_consensus(values):
+        if len(values) < min_size:
+            return None
+        
+        counts = Counter(values)
+        most_common, count = counts.most_common(1)[0]
+        
+        if count / len(values) >= threshold:
+            return most_common
+        return None
+
+    consensus_functions = []
+    consensus_pathways = []
+
+    for ids in df["associated_characterized_bait_sequences"]:
+        if not ids:
+            consensus_functions.append(None)
+            consensus_pathways.append(None)
+            continue
+
+        # extract function + pathway
+        functions = [seq.split("__")[1] for seq in ids if "__" in seq]
+        pathways = [seq.split("__")[2] for seq in ids if "__" in seq]
+
+        consensus_functions.append(get_consensus(functions))
+        consensus_pathways.append(get_consensus(pathways))
+
+    df = df.copy()
+    df["consensus_function"] = consensus_functions
+    df["consensus_pathway"] = consensus_pathways
+
+    return df
+
+
+def add_annotation_columns(df, threshold=0.8):
+    df = df.copy()
+
+    # --- condition: cluster is well resolved ---
+    well_resolved = df["perc_of_ingroup_2ODD"] >= threshold
+
+    # --- annotations ---
+    df["annotated_two_odd_id"] = df["two_odd_id"].where(well_resolved, None)
+
+    df["annotated_function"] = df["consensus_function"].where(
+        well_resolved & df["consensus_function"].notna(),
+        None
+    )
+
+    df["annotated_metabolic_pathway"] = df["consensus_pathway"].where(
+        well_resolved & df["consensus_pathway"].notna(),
+        None
+    )
+
+    # --- REORDER COLUMNS ---
+    first_cols = [
+        "candidate",
+        "annotated_two_odd_id",
+        "annotated_function",
+        "annotated_metabolic_pathway"
+    ]
+
+    cluster_cols = [
+            "cluster_index",
+            "two_odd_id",
+            "perc_of_ingroup_2ODD",
+            "n_ingroup_2ODD",
+            "n_candidates",
+            "plant_groups",
+            "neighboring_cluster_idx",
+            "neighboring_cluster_dist"
+    ]
+
+
+
+    # everything else = bait + metadata columns
+    other_cols = [
+        col for col in df.columns
+        if col not in first_cols + cluster_cols
+    ]
+
+    ordered_cols = first_cols + cluster_cols + other_cols
+
+    return df[ordered_cols]
 
 #%%---------------------------------------------------------------
 def run(
         result_dir: Path, 
         config: dict, 
-        seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer"
+        seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer", 
+        completed_annotation_steps: dict | None = None
         ):
     
     annotation_fasta_path = result_dir / ANNOTATION_FASTA
-    ingroup_2ODD_fasta = config["annotate"]["ingroup"]
+    ingroup_2ODD_fasta = config["annotate"]["bait_sequence_collection"]
     major_minor_2ODD_dict = json.load(open(config["annotate"]["major_minor_2ODD_ids"]))
     major_char_2ODD_info_dict = json.load(open(config["annotate"]["major_2ODDs_functional_characterization"]))
     annotation_msa_path = result_dir / ANNOTATION_MSA
     annotation_msa_trim_path = result_dir / ANNOTATION_MSA_TRIM
     annotation_tree_path = result_dir / ANNOTATION_TREE
     save_tree = config["annotate"].get("save_tree", False)
+    reuse_existing = config["pipeline"].get("reuse_existing", False)
+
+    if not reuse_existing:
+        completed_annotation_steps = None  # ignore already completed steps if not reusing existing results
 
     # ========== FROM FASTA TO NWK ==========
-    create_annotation_fasta(
-        results_dir=result_dir,
-        ingroup_2ODD_fasta=ingroup_2ODD_fasta,
-        output_fasta=annotation_fasta_path,
-        seq_sim_method=seq_sim_method
-    )
 
+    if completed_annotation_steps is None or not completed_annotation_steps["annotation_fasta"]:
+        create_annotation_fasta(
+            results_dir=result_dir,
+            ingroup_2ODD_fasta=ingroup_2ODD_fasta,
+            output_fasta=annotation_fasta_path,
+            seq_sim_method=seq_sim_method
+        )
 
-    from_fasta_to_nwk(
-        fasta_path=annotation_fasta_path,
-        msa_path=annotation_msa_path,
-        msa_trim_path=annotation_msa_trim_path,
-        tree_path=annotation_tree_path
-    )
+    if completed_annotation_steps is None or not completed_annotation_steps["annotation_tree"]:
+        completed_msa = completed_annotation_steps.get("annotation_msa") if completed_annotation_steps else False
+        completed_msa_trim = completed_annotation_steps.get("annotation_msa_trim") if completed_annotation_steps else False
+        completed_tree = completed_annotation_steps.get("annotation_tree") if completed_annotation_steps else False 
+        
+        from_fasta_to_nwk(
+            fasta_path=annotation_fasta_path,
+            msa_path=annotation_msa_path,
+            msa_trim_path=annotation_msa_trim_path,
+            tree_path=annotation_tree_path,
+            completed_msa=completed_msa,
+            completed_msa_trim=completed_msa_trim,
+            completed_tree=completed_tree
+            )
 
     # load tree
     tree = PhyloTree(open(annotation_tree_path), sp_naming_function=lambda name: name.split("__")[-1])
     tax2names, tax2lineages, tax2rank = tree.annotate_ncbi_taxa(taxid_attr='species')
     tree.ladderize()  
     if save_tree:
-        tree.write(outfile=str(result_dir / "annotated_tree.nwk"))
+        tree.write(outfile=str(result_dir / ANNOTATION_TREE))
 
     # ========== ANNOTATE TREE WITH 2ODD IDS AND PLANT GROUPS ==========
     ingroup_seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict)
@@ -852,13 +1029,13 @@ def run(
     # representing the clusters of sequences in the tree, 
     # their assigned 2ODD ID, the percentage of ingroup 2ODDs in the cluster, 
     # and the plant groups represented in the cluster
-    clusters = get_clusters(tree)
     dist_dict = build_distance_lookup(tree)
+    clusters = get_clusters(tree, dist_dict=dist_dict)
     neighboring_clusters = compute_cluster_neighbors(clusters, dist_dict)
     meta_info = cluster_meta_info(
         clusters=clusters,
         major_minor_2ODD_dict=major_minor_2ODD_dict,
-        two_odd_ingroups=set(ingroup_seq_to_2ODD_id.keys()),
+        two_odd_ingroups=ingroup_headers,
         candidates=candidate_headers
     )
     cluster_df = clusters_meta_to_df(meta_info, neighboring_clusters)
@@ -867,40 +1044,33 @@ def run(
     # 2ODD_info_df:
     # all 2ODD ids and, if applicable, their associated functions and metabolic pathways shown in experiments
     two_odd_info_df = pd.DataFrame.from_dict(major_char_2ODD_info_dict, orient="index").reset_index().rename(columns={"index": "two_odd_id"})
+    two_odd_info_df.rename(columns={
+        "functions": "associated_functions",
+        "metabolic_pathways": "associated_metabolic_pathways",
+        "char_2ODD_ids": "associated_characterized_bait_sequences"
+    }, inplace=True)
+    two_odd_info_df = add_consensus_annotations(two_odd_info_df)
 
     # candidate_char_baits_df:
-    # each row is a candidate sequence, its assigned cluster idx, and 
-    # the closest, second closest and third closest characterized 2ODD sequence and the corresponding distance,
-    char_baits = [header for header in ingroup_headers if is_char_bait_sequence(header)]
+    # each row is a candidate sequence
+    # and gets assigned cluster idx, closest, and second closest characterized 2ODD sequence 
+    # and the corresponding distance
     seq_id_to_idx = seq_to_cluster_idx(clusters)
     
-    candidate_char_baits_dict = {}
-    for candidate in candidate_headers:
-
-        closest_char_baits = sorted(
-            char_baits, 
-            key=lambda bait: dist_dict[candidate][bait]
-        )[:3]
-        candidate_char_baits_dict[candidate] = {
-            "cluster_idx": seq_id_to_idx.get(candidate, None),
-            "closest_char_bait": closest_char_baits[0],
-            "closest_char_bait_dist": dist_dict[candidate][closest_char_baits[0]],
-            "second_closest_char_bait": closest_char_baits[1] if len(closest_char_baits) > 1 else None,
-            "second_closest_char_bait_dist": dist_dict[candidate][closest_char_baits[1]] if len(closest_char_baits) > 1 else None,
-            "third_closest_char_bait": closest_char_baits[2] if len(closest_char_baits) > 2 else None,
-            "third_closest_char_bait_dist": dist_dict[candidate][closest_char_baits[2]] if len(closest_char_baits) > 2 else None,
-        }
-    candidate_char_baits_df = pd.DataFrame.from_dict(candidate_char_baits_dict, orient="index").reset_index().rename(columns={"index": "candidate"})
+    candidate_char_baits_df = get_candidate_to_char_baits_df(
+        candidate_headers=candidate_headers,
+        ingroup_headers=ingroup_headers,
+        dist_dict=dist_dict,
+        seq_id_to_idx_dict=seq_id_to_idx
+    )
         
     # create left join of candidate_char_baits_df with two_odd_info_df and cluster_df to get a full picture of each candidate's assigned cluster, closest characterized baits, and the known functions of those baits
     candidate_char_baits_full_df = candidate_char_baits_df.merge(cluster_df, how="left", left_on="cluster_idx", right_on="cluster_index").merge(two_odd_info_df, how="left", left_on="two_odd_id", right_on="two_odd_id")
+    annotation_df = add_annotation_columns(candidate_char_baits_full_df)
 
+    # save dataframe
+    annotation_df.to_csv(result_dir / ANNOTATION_CSV, index=False)
 
-
-
-    # ==========
-
-
-
+    return annotation_df
 
 # %%

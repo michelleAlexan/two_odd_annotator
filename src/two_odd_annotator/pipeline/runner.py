@@ -10,11 +10,20 @@ from two_odd_annotator.services import (
     vizualize
 )
 
+from two_odd_annotator.constants import (
+    ANNOTATION_FASTA,
+    ANNOTATION_MSA,
+    ANNOTATION_MSA_TRIM,
+    ANNOTATION_TREE,
+)
+
 
 class Runner:
     """Run the two_odd_annotator pipeline. 
     Orchestrate the execution of each step in the pipeline, passing the necessary inputs and outputs between steps.
     Handle logging and error handling for the entire pipeline run.
+
+
     """
 
     def __init__(
@@ -29,7 +38,8 @@ class Runner:
             sp_name_mapping: str | None = None,
             seq_sim_method: str | None = None,
             compute_plots: bool | None = None,
-            seq_len_thresh: str | None = None
+            seq_len_thresh: str | None = None, 
+            delete_intermediate_files: bool | None = None
         ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
@@ -52,6 +62,8 @@ class Runner:
             self.config["pipeline"]["compute_plots"] = compute_plots
         if seq_len_thresh is not None:
             self.config["pipeline"]["seq_len_thresh"] = int(seq_len_thresh)
+        if delete_intermediate_files is not None:
+            self.config["pipeline"]["delete_intermediate_files"] = delete_intermediate_files
 
         # initialize the pipeline run by creating a state object.
         # State tracks initializes output directory and subdirectories,
@@ -82,14 +94,33 @@ class Runner:
                 config = self.config, 
                 seq_sim_method = self.config["pipeline"]["seq_sim_method"]
                 )
-            
-        # annotate.run(result_dir=self.state.output_base_dir, config_path=self.config_path)
-        
-        # if self.config["pipeline"]["compute_plots"]:
-        #     vizualize.run(self.state.output_base_dir, self.config_path)
 
+
+        # After all species have been pre-filtered, run the phylogenetic annotation
+        if self.config["pipeline"]["reuse_existing"] and self.state.annotation_steps_completed["annotation_csv"]:
+            print("Reusing existing annotation results...")
+        else:
+            annotate.run(
+                result_dir=self.state.output_base_dir,
+                config=self.config,
+                seq_sim_method=self.config["pipeline"]["seq_sim_method"],
+                completed_annotation_steps=self.state.annotation_steps_completed,
+            )
+
+        # Visualization service is currently a placeholder; enable once implemented.
+        # if self.config["pipeline"].get("compute_plots"):
+        #     vizualize.run(self.state.output_base_dir, self.config)
 
         elapsed = (timeit.default_timer() - start) / 60
+
+        if self.config["pipeline"].get("delete_intermediate_files"):
+            print(f"Deleting intermediate annotation files: {ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE}...")
+            # delete intermediate files (ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE)
+            # that are found in the output directory (results folder)
+            for file in self.state.output_base_dir.rglob("*"):
+                if file.name in [ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE]:
+                    file.unlink()
+
         print(f"Pipeline completed in {elapsed:.2f} minutes.")
 
 

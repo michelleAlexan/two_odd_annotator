@@ -1,7 +1,7 @@
 #%%
 import json
 
-
+import pandas as pd
 from pathlib import Path
 from ete4 import PhyloTree
 
@@ -32,7 +32,9 @@ from two_odd_annotator.services.annotate import (
     compute_cluster_neighbors,
     two_odd_id_to_cluster_indices, 
     seq_to_cluster_idx,
-    cluster_meta_info)
+    cluster_meta_info,
+    get_candidate_to_char_baits_df
+)
 
 
 RESULTS_DIR = Path(__file__).parents[1] /  ".results" 
@@ -1978,7 +1980,7 @@ def test_seq_to_cluster_idx():
 
 
 
-def test_landscape_meta_info():
+def test_cluster_meta_info():
     manual_candidates = {
         "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
         'VIT_204s0008g04920.2__29760' : '2ODD34',
@@ -2158,4 +2160,153 @@ def test_landscape_meta_info():
 
     result = cluster_meta_info(clusters, major_minor_2ODDs_dict,ingroup_headers, manual_candidates)
     assert result == expected
+
+def test_get_candidate_to_char_baits_df():
+    manual_candidates = {
+        "lcl_NC_084852.1_cds_XP_061960601.1_3168__3691" : "2ODD34",
+        'VIT_204s0008g04920.2__29760' : '2ODD34',
+        'Ptrif.0001s0318.1__37690' : '2ODD34',
+        'Atru_chr7_2342__47965' : '2ODD34',
+        'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656' : '2ODD34',
+        'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663' : '2ODD34',
+        'GWHTACBH000860__413952' : '2ODD34',
+        'Potri.006G248000.1__3694' : '2ODD34',
+        'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986' : '2ODD34',
+        'Lus10008097_PACid-23169790__4006' : '2ODD34', 
+        'Acc09929.1__3625': "minor_2ODD_cluster",
+        'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451': "2ODD35",
+        'Kaladp0011s0492.1.v1.1__63787': "2ODD35",
+        'lcl_OX459121.1_cds_CAI9101307.1_14231__43536': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058': "2ODD35",
+        'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443': "2ODD35",
+        'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058': "2ODD35", 
+        'Bol038153__3712': "2ODD36",
+        "lcl_NC_053024.1_cds_XP_048567703.1_14633__4572": "unresolved"
+        }
+
+    for leaf in t:
+        if leaf.name in manual_candidates:
+            leaf.props["two_odd_id"] = "candidate"
+    _, ingroup_headers = split_seqs_by_2ODD_membership(seq_to_2ODD_id=seq_to_2ODD_id, tree=t) 
+    seq_id_to_idx_dict = seq_to_cluster_idx(get_clusters(t))
+    expected_df = pd.DataFrame({'candidate': {0: 'lcl_NC_084852.1_cds_XP_061960601.1_3168__3691',
+                1: 'VIT_204s0008g04920.2__29760',
+                2: 'Ptrif.0001s0318.1__37690',
+                3: 'Atru_chr7_2342__47965',
+                4: 'lcl_NW_019168159.1_cds_XP_022728803.1_47147__66656',
+                5: 'lcl_NC_045134.1_cds_XP_031407529.1_33286__22663',
+                6: 'GWHTACBH000860__413952',
+                7: 'Potri.006G248000.1__3694',
+                8: 'lcl_NC_065570.1_cds_XP_050209042.1_2787__3986',
+                9: 'Lus10008097_PACid-23169790__4006',
+                10: 'Acc09929.1__3625',
+                11: 'lcl_NC_031989.1_cds_XP_019252277.1_2282__49451',
+                12: 'Kaladp0011s0492.1.v1.1__63787',
+                13: 'lcl_OX459121.1_cds_CAI9101307.1_14231__43536',
+                14: 'rna-gnl_WGS-JAMLDZ_EVM0034906.1__4058',
+                15: 'lcl_NC_039901.1_cds_XP_027112943.1_15453__13443',
+                16: 'rna-gnl_WGS-JAMLDZ_EVM0007978.1__4058',
+                17: 'Bol038153__3712',
+                18: 'lcl_NC_053024.1_cds_XP_048567703.1_14633__4572'},
+                'cluster_idx': {0: 0,
+                1: 6,
+                2: 6,
+                3: 6,
+                4: 6,
+                5: 6,
+                6: 6,
+                7: 6,
+                8: 6,
+                9: 6,
+                10: 7,
+                11: 20,
+                12: 20,
+                13: 20,
+                14: 20,
+                15: 20,
+                16: 20,
+                17: 24,
+                18: 28},
+                'closest_char_bait': {0: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                1: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                2: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                3: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                4: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                5: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                6: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                7: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                8: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                9: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                10: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                11: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                12: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                13: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                14: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                15: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                16: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                17: 'AF417859__AOP3__glucosinolate_biosynthesis__3702',
+                18: 'AF417859__AOP3__glucosinolate_biosynthesis__3702'},
+                'closest_char_bait_dist': {0: 2.3441771,
+                1: 2.2212721999999996,
+                2: 2.4032200999999995,
+                3: 2.4297531,
+                4: 2.2819316999999995,
+                5: 2.4276866999999998,
+                6: 2.296112,
+                7: 2.2915937,
+                8: 2.4520146999999994,
+                9: 2.6844072,
+                10: 2.7427177,
+                11: 2.1061180999999998,
+                12: 2.1150531,
+                13: 2.2243331,
+                14: 2.2426211,
+                15: 2.2775660999999996,
+                16: 2.2996330999999994,
+                17: 2.5819186,
+                18: 3.9759043999999997},
+                'second_closest_char_bait': {0: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                1: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                2: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                3: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                4: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                5: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                6: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                7: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                8: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                9: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                10: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                11: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                12: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                13: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                14: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                15: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                16: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                17: 'AF417858__AOP2__glucosinolate_biosynthesis__3702',
+                18: 'AF417858__AOP2__glucosinolate_biosynthesis__3702'},
+                'second_closest_char_bait_dist': {0: 2.3673281,
+                1: 2.2444232,
+                2: 2.4263711,
+                3: 2.4529041,
+                4: 2.3050827,
+                5: 2.4508377,
+                6: 2.319263,
+                7: 2.3147447,
+                8: 2.4751657,
+                9: 2.7075582,
+                10: 2.7658687,
+                11: 2.1292690999999997,
+                12: 2.1382041,
+                13: 2.2474841,
+                14: 2.2657721,
+                15: 2.3007171,
+                16: 2.3227841,
+                17: 2.6050695999999998,
+                18: 3.9990553999999996
+                }
+            }
+    )
+
+    result = get_candidate_to_char_baits_df(manual_candidates.keys(), ingroup_headers, dist_dict, seq_id_to_idx_dict)
+    assert result.equals(expected_df)
 

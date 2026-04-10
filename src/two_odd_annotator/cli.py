@@ -71,7 +71,14 @@ def main():
         "If set to -1, no length filtering will be applied."
     )
 
+    parser.add_argument(
+        "--delete-intermediate-files",
+        choices=["true","false"],
+        help="Override config (default: false): whether to delete intermediate files (e.g. alignment files) after annotation is complete."
+    )
+
     args = parser.parse_args()
+
 
 
     # Initialize pipeline
@@ -84,6 +91,7 @@ def main():
         seq_sim_method=args.seq_sim_method,
         compute_plots=args.compute_plots.lower() == "true" if args.compute_plots else None,
         seq_len_thresh=args.seq_len_thresh,
+        delete_intermediate_files=args.delete_intermediate_files.lower() == "true" if args.delete_intermediate_files else None,
     )
 
     pipeline.run()

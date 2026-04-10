@@ -22,7 +22,13 @@ from two_odd_annotator.constants import (
 
     FILTERED_DIAMOND_FASTA, 
     FILTERED_HMMER_FASTA, 
-    FILTERED_BLASTP_FASTA
+    FILTERED_BLASTP_FASTA,
+
+    ANNOTATION_FASTA,
+    ANNOTATION_MSA,
+    ANNOTATION_MSA_TRIM,
+    ANNOTATION_TREE,
+    ANNOTATION_CSV
 )
 
 from two_odd_annotator.utils.io import write_metadata
@@ -47,9 +53,30 @@ class State:
         self.input_fasta_paths = []  
         self._validate_fasta_input_exists()
 
-        # store results of completed pipeline steps for each input file, 
-        # which can be used to determine which steps need to be run / re-run when resuming from an existing output directory
+        # store which steps have been completed for each species subdir,
+        # which can be used to determine which steps need to be run / re-run
+        # when resuming from an existing output directory
+        self.subdir_steps_completed = {}
+
+        # backward-compatible aggregate results dict used elsewhere in the
+        # pipeline/tests
         self.results = None
+
+        # store results of completed annotation steps at the top-level
+        # output directory (one set per run, not per species)
+        self.annotation_steps_completed = {
+            "annotation_fasta": False,
+            "annotation_msa": False,
+            "annotation_msa_trim": False,
+            "annotation_tree": False,
+            "annotation_csv": False,
+        }
+
+        self.visualization_steps_completed = {
+            "plot_1": False,
+            "plot_2": False,
+            "plot_3": False,
+        }
 
         # store metadata for each species, 
         #  including inferred scientific name, tax id, original input file path, and any other relevant info
@@ -82,6 +109,26 @@ class State:
             raise ValueError(f"Could not infer species name from file: {file_name}")
 
         return scientific_name
+    
+    def _fetch_completed_pipeline_steps_output_dir(self):
+        """
+        Check which annotation steps have been completed by checking the 
+        output directory for the presence of expected output files. 
+        This can be used to determine which steps need to be run / re-run when resuming from an existing output directory.
+
+        """
+        # check which annotation steps are completed
+        if (self.output_base_dir / ANNOTATION_FASTA).exists():
+            self.annotation_steps_completed["annotation_fasta"] = True
+        if (self.output_base_dir / ANNOTATION_MSA).exists():
+            self.annotation_steps_completed["annotation_msa"] = True
+        if (self.output_base_dir / ANNOTATION_MSA_TRIM).exists():
+            self.annotation_steps_completed["annotation_msa_trim"] = True
+        if (self.output_base_dir / ANNOTATION_TREE).exists():
+            self.annotation_steps_completed["annotation_tree"] = True
+        if (self.output_base_dir / ANNOTATION_CSV).exists():
+            self.annotation_steps_completed["annotation_csv"] = True   
+
 
     def _fetch_completed_pipeline_steps_for_subdir(self, subdir_path: Path) -> dict:
         """
@@ -89,8 +136,6 @@ class State:
         """
         pipeline_steps = {
             "seq_sim_filter": None, # can be populated with a list of the filtering methods ["diamond", "hmmer", "blastp"]
-            "annotate": None,
-            "visualize": None
         }
 
         expected_files_diamond = [DIAMOND_RESULTS, FILTERED_DIAMOND_HITS, FILTERED_DIAMOND_FASTA]
@@ -114,19 +159,11 @@ class State:
             pipeline_steps["seq_sim_filter"].append("blastp")
 
 
-        # TODO: ADJUST WHEN ANNOTATION AND VISUALIZATION STEPS ARE DEFINED
-        # check if annotation step is completed (can be determined by presence of annotation results file, e.g. "annotation_results.tsv")
-        if (subdir_path / "annotation_results.tsv").exists():
-            pipeline_steps["annotate"] = True
-
-        # check if visualization step is completed (can be determined by presence of visualization output files, e.g. "plots" directory with expected plot files)
-        if (subdir_path / "plots").exists() and any((subdir_path / "plots").iterdir()):
-            pipeline_steps["visualize"] = True
-
         # append the dict of completed steps for the subdir to the overall results dict
         result = {subdir_path.name: pipeline_steps}
 
         return result
+    
     
     # -----------INITIALIZATION METHODS ---------------
     def _validate_fasta_input_exists(self):
@@ -178,8 +215,24 @@ class State:
             raise ValueError(f"Input path {self.input_path} is not a file or directory")
 
     def _prepare_output_directory(self):
+        """
+        Create the output base directory if it doesn't exist, 
+        and check for any completed pipeline steps in the output directory to determine which 
+        steps don't need to be re-run (if Runner.reuse_existing is set toTrue).
+
+        The expected output directory files are:
+        - annotation.fasta
+        - annotation_msa.fasta
+        - annotation_msa_trim.fasta
+        - annotation_tree.nwk
+        - annotation_results.csv
+        """
+
         self.output_base_dir.mkdir(parents=True, exist_ok=True)
 
+        # check if any annotation steps have been completed in the output
+        # directory; this is used when reuse_existing=True to skip work.
+        self._fetch_completed_pipeline_steps_output_dir()
 
     def _initialize_species_subdirs(self):
 
