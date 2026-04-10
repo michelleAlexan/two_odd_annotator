@@ -1,4 +1,4 @@
-#%%
+# %%
 from logging import config
 import os
 import subprocess
@@ -8,28 +8,43 @@ from typing import Literal
 import pandas as pd
 from Bio import SeqIO
 
-
 BLAST_COLUMNS = [
-    "qseqid", "sseqid", "pident", "length", "mismatch", "gapopen",
-    "qstart", "qend", "sstart", "send", "evalue", "bitscore"
+    "qseqid",
+    "sseqid",
+    "pident",
+    "length",
+    "mismatch",
+    "gapopen",
+    "qstart",
+    "qend",
+    "sstart",
+    "send",
+    "evalue",
+    "bitscore",
 ]
 
-#%%
+# %%
 # =============================================================================
 # Helper functions
 # =============================================================================
+
 
 def count_fasta_sequences(fasta_file: str) -> int:
     return sum(1 for _ in SeqIO.parse(fasta_file, "fasta"))
 
 
-def write_filtered_fasta(input_fasta: str, output_fasta: str, ids: set, seq_len_thresh: int | None) -> None:
+def write_filtered_fasta(
+    input_fasta: str, output_fasta: str, ids: set, seq_len_thresh: int | None
+) -> None:
     median_2ODD_seq_len = 349
     with open(output_fasta, "w") as out:
         for record in SeqIO.parse(input_fasta, "fasta"):
             if record.id in ids:
                 if seq_len_thresh is not None:
-                    if len(record.seq) < median_2ODD_seq_len - seq_len_thresh or len(record.seq) > median_2ODD_seq_len + seq_len_thresh:
+                    if (
+                        len(record.seq) < median_2ODD_seq_len - seq_len_thresh
+                        or len(record.seq) > median_2ODD_seq_len + seq_len_thresh
+                    ):
                         continue
                 SeqIO.write(record, out, "fasta")
 
@@ -37,6 +52,7 @@ def write_filtered_fasta(input_fasta: str, output_fasta: str, ids: set, seq_len_
 # =============================================================================
 #  ALIGNMENT FUNCTION (DIAMOND OR BLAST)
 # =============================================================================
+
 
 def run_alignment(
     tool: Literal["diamond", "blastp"],
@@ -50,7 +66,6 @@ def run_alignment(
     """
 
     os.makedirs(output_dir, exist_ok=True)
-
 
     # Load configuration file
     reference_db = config["filter_tools"][tool]["reference_db"]
@@ -74,7 +89,6 @@ def run_alignment(
 
     print(f"Processing {input_file}")
     print(f"  → input size: {count_fasta_sequences(input_file)}")
-
 
     # Build command
     if tool == "blastp":
@@ -110,26 +124,29 @@ def run_alignment(
 
     # Apply filtering
     df_filtered = (
-        df[(df["pident"] >= thresholds["pident"]) &
-           (df["length"] >= thresholds["length"]) &
-           (df["bitscore"] >= thresholds["bitscore"])]
+        df[
+            (df["pident"] >= thresholds["pident"])
+            & (df["length"] >= thresholds["length"])
+            & (df["bitscore"] >= thresholds["bitscore"])
+        ]
         .sort_values("bitscore", ascending=False)
         .groupby("qseqid")
         .head(thresholds["num_hits"])
         .reset_index(drop=True)
     )
 
-    passed_ids = set(df_filtered["qseqid"])  
+    passed_ids = set(df_filtered["qseqid"])
     df_filtered.to_csv(filtered_csv, index=False)
 
     # Write filtered FASTA (empty if no hits)
     passed_ids = set(df_filtered["qseqid"])
     if passed_ids:
-        write_filtered_fasta(input_file, filtered_fasta, passed_ids, seq_len_thresh=seq_len_thresh)
+        write_filtered_fasta(
+            input_file, filtered_fasta, passed_ids, seq_len_thresh=seq_len_thresh
+        )
     else:
         # create empty FASTA if no sequences passed thresholds
         open(filtered_fasta, "w").close()
-
 
     print(f"  → {len(passed_ids)} sequences retained")
 
@@ -137,8 +154,9 @@ def run_alignment(
 
 
 # =============================================================================
-# HMMER 
+# HMMER
 # =============================================================================
+
 
 def parse_hmmsearch_output(hmmout_path: str) -> pd.DataFrame:
     """
@@ -163,21 +181,23 @@ def parse_hmmsearch_output(hmmout_path: str) -> pd.DataFrame:
                 parts = line.strip().split()
                 if len(parts) < 9:
                     continue
-                rows.append({
-                    "full_Evalue": float(parts[0]),
-                    "full_score": float(parts[1]),
-                    "full_bias": float(parts[2]),
-                    "bestdom_Evalue": float(parts[3]),
-                    "bestdom_score": float(parts[4]),
-                    "bestdom_bias": float(parts[5]),
-                    "exp": float(parts[6]),
-                    "N": int(parts[7]),
-                    "Sequence": parts[8],
-                    "Description": " ".join(parts[9:]) if len(parts) > 9 else "",
-                })
+                rows.append(
+                    {
+                        "full_Evalue": float(parts[0]),
+                        "full_score": float(parts[1]),
+                        "full_bias": float(parts[2]),
+                        "bestdom_Evalue": float(parts[3]),
+                        "bestdom_score": float(parts[4]),
+                        "bestdom_bias": float(parts[5]),
+                        "exp": float(parts[6]),
+                        "N": int(parts[7]),
+                        "Sequence": parts[8],
+                        "Description": " ".join(parts[9:]) if len(parts) > 9 else "",
+                    }
+                )
 
-    df= pd.DataFrame(rows)
-    
+    df = pd.DataFrame(rows)
+
     return df
 
 
@@ -186,7 +206,9 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     Run hmmsearch, filter using thresholds from config, and write filtered FASTA and CSV.
     """
     hmmer_cfg = config["filter_tools"]["hmmer"]
-    thresholds = {key: float(val) for key, val in config["parameters"]["thresholds_hmmer"].items()}
+    thresholds = {
+        key: float(val) for key, val in config["parameters"]["thresholds_hmmer"].items()
+    }
     seq_len_thresh = config["pipeline"]["seq_len_thresh"]
     if seq_len_thresh == -1:
         seq_len_thresh = None
@@ -197,7 +219,9 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     filtered_fasta = Path(output_dir) / "filtered_hmmer.fasta"
 
     # Skip if reuse_existing
-    if config.get("reuse_existing") and all(f.exists() for f in [output_txt, filtered_csv, filtered_fasta]):
+    if config.get("reuse_existing") and all(
+        f.exists() for f in [output_txt, filtered_csv, filtered_fasta]
+    ):
         print(f"Skipping HMMER: existing results found for {input_file}")
         return pd.read_csv(filtered_csv)
 
@@ -213,11 +237,20 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     df = parse_hmmsearch_output(output_txt)
     if df.empty:
         # If no hits found, create empty CSV and FASTA
-        pd.DataFrame(columns=[
-            "full_Evalue","full_score","full_bias",
-            "bestdom_Evalue","bestdom_score","bestdom_bias",
-            "exp","N","Sequence","Description"
-        ]).to_csv(filtered_csv, index=False)
+        pd.DataFrame(
+            columns=[
+                "full_Evalue",
+                "full_score",
+                "full_bias",
+                "bestdom_Evalue",
+                "bestdom_score",
+                "bestdom_bias",
+                "exp",
+                "N",
+                "Sequence",
+                "Description",
+            ]
+        ).to_csv(filtered_csv, index=False)
 
         open(filtered_fasta, "w").close()  # create empty fasta
         print("  → No sequences passed HMMER filtering. Empty files created.")
@@ -225,11 +258,11 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
 
     # Apply thresholds
     df_filtered = df[
-        (df["full_Evalue"] <= thresholds["full_Evalue"]) &
-        (df["bestdom_Evalue"] <= thresholds["bestdom_Evalue"]) &
-        (df["full_score"] >= thresholds["full_score"]) &
-        (df["bestdom_score"] >= thresholds["bestdom_score"]) &
-        (df["N"] >= thresholds["N"])
+        (df["full_Evalue"] <= thresholds["full_Evalue"])
+        & (df["bestdom_Evalue"] <= thresholds["bestdom_Evalue"])
+        & (df["full_score"] >= thresholds["full_score"])
+        & (df["bestdom_score"] >= thresholds["bestdom_score"])
+        & (df["N"] >= thresholds["N"])
     ].reset_index(drop=True)
 
     # Save CSV
@@ -238,7 +271,9 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     # Filter FASTA
     keep_ids = set(df_filtered["Sequence"])
     if not df.empty:
-        write_filtered_fasta(input_file, filtered_fasta, keep_ids, seq_len_thresh=seq_len_thresh)
+        write_filtered_fasta(
+            input_file, filtered_fasta, keep_ids, seq_len_thresh=seq_len_thresh
+        )
 
     print(f"HMMER: {len(keep_ids)} sequences passed thresholds")
 
@@ -248,9 +283,11 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
 # ============================================================================
 # SEQUENCE SIMILIRATY FILTERING (Pipeline logic)
 # =============================================================================
-def run(input_path: Path|str, subdir: Path|str, config: dict, seq_sim_method: str) -> None:
-    """ Run the full sequence similarity filtering pipeline for a single input FASTA file.
-    This is the core function that processes one FASTA file, runs DIAMOND or HMMER or BLASTP filtering, and handles metadata updates. 
+def run(
+    input_path: Path | str, subdir: Path | str, config: dict, seq_sim_method: str
+) -> None:
+    """Run the full sequence similarity filtering pipeline for a single input FASTA file.
+    This is the core function that processes one FASTA file, runs DIAMOND or HMMER or BLASTP filtering, and handles metadata updates.
     It is called by the main CLI function for each file found in the input path.
     """
 
@@ -262,8 +299,3 @@ def run(input_path: Path|str, subdir: Path|str, config: dict, seq_sim_method: st
 
     elif seq_sim_method == "hmmer":
         run_hmmer(str(input_path), str(subdir), config)
-
-
- 
-
-

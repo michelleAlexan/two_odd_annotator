@@ -1,42 +1,46 @@
-#%%
+# %% ======= IMPORTS =======
 
 from ete4 import PhyloTree, Tree
 from Bio import SeqIO
 from pathlib import Path
 import json
-import numpy as np
 import pandas as pd
 from collections import Counter
 
 import re
-from typing import Literal, Callable
+from typing import Literal
 
 from bio_tools.msa.mafft import run_mafft, trim_msa_by_gap_fraction
 from bio_tools.phylo.fasttree import run_fasttree
-from bio_tools.viz.tree import (
-    explore_tree_plant_groups,
-    explore_2ODD_IDs
-    )
 
 
 from two_odd_annotator.constants import (
-    FILTERED_HMMER_FASTA, 
+    FILTERED_HMMER_FASTA,
     FILTERED_DIAMOND_FASTA,
-    FILTERED_BLASTP_FASTA, 
+    FILTERED_BLASTP_FASTA,
     ANNOTATION_FASTA,
-    ANNOTATION_MSA, 
+    ANNOTATION_MSA,
     ANNOTATION_MSA_TRIM,
     ANNOTATION_TREE,
-    ANNOTATION_CSV
-    )
+    ANNOTATION_CSV,
+)
 
-MAJOR_MINOR_2ODD_DICT = json.load(open(Path(__file__).parents[3] / "data/2ODDs/major_minor_2ODD_ids_manual.json"))
-MAJOR_2ODD_INFO_DICT = json.load(open(Path(__file__).parents[3] / "data/2ODDs/major_2ODD_char_info.json"))
-#%% helper functions
+MAJOR_MINOR_2ODD_DICT = json.load(
+    open(Path(__file__).parents[3] / "data/2ODDs/major_minor_2ODD_ids_manual.json")
+)
+MAJOR_2ODD_INFO_DICT = json.load(
+    open(Path(__file__).parents[3] / "data/2ODDs/major_2ODD_char_info.json")
+)
+
+
+# %% ========= FUNCTIONS ========
 def is_char_bait_sequence(leaf_name: str) -> bool:
     return len(leaf_name.split("__")) == 4
 
-def reverse_major_minor_2ODD_dict(major_minor_2ODD_dict: dict[str, list[str]]= MAJOR_MINOR_2ODD_DICT) -> dict[str, str]:
+
+def reverse_major_minor_2ODD_dict(
+    major_minor_2ODD_dict: dict[str, list[str]] = MAJOR_MINOR_2ODD_DICT,
+) -> dict[str, str]:
     """
     Build a dictionary mapping each sequence ID to its corresponding 2ODD_id.
 
@@ -44,11 +48,11 @@ def reverse_major_minor_2ODD_dict(major_minor_2ODD_dict: dict[str, list[str]]= M
     {
         "major_2ODDs": {
             "2ODD01": [
-                "seq_header1", ...], 
+                "seq_header1", ...],
 
         "minor_2ODDs": {
             "2ODD_minor14": [
-                "seq_header2", ...], 
+                "seq_header2", ...],
              ...
         }
     }
@@ -59,7 +63,7 @@ def reverse_major_minor_2ODD_dict(major_minor_2ODD_dict: dict[str, list[str]]= M
         "seq_header2": "2ODD_minor14",
         ...
     }
-    
+
     """
     seq_id_to_2ODD_id = {}
 
@@ -74,9 +78,7 @@ def reverse_major_minor_2ODD_dict(major_minor_2ODD_dict: dict[str, list[str]]= M
     return seq_id_to_2ODD_id
 
 
-
 SEQ_TO_2ODD_ID = reverse_major_minor_2ODD_dict(MAJOR_MINOR_2ODD_DICT)
-
 
 
 def build_parent_map(two_odd_ids: list[str]) -> dict[str, str]:
@@ -119,6 +121,7 @@ def build_parent_map(two_odd_ids: list[str]) -> dict[str, str]:
 
     return parent_map
 
+
 PARENT_DICT = build_parent_map(list(MAJOR_MINOR_2ODD_DICT["major_2ODDs"].keys()))
 
 
@@ -128,12 +131,12 @@ def get_base_id(two_odd_id: str | None):
     return PARENT_DICT.get(two_odd_id, two_odd_id)
 
 
-
 def create_annotation_fasta(
     results_dir: Path,
     ingroup_2ODD_fasta: Path,
     output_fasta: Path,
-    seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer"):
+    seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer",
+):
 
     # merge ingroup 2ODDs and candidate genes into one fasta file
     if seq_sim_method == "hmmer":
@@ -148,7 +151,6 @@ def create_annotation_fasta(
         raise ValueError(
             f"Invalid seq_sim_method: {seq_sim_method}. Must be one of 'hmmer', 'diamond', 'blastp', or 'all'."
         )
-    
 
     # collect and write all pre-filtered sequences into one fasta file for annotation
     seq_ids = set()
@@ -239,64 +241,54 @@ def split_seqs_by_2ODD_membership(
 
 
 def from_fasta_to_nwk(
-        fasta_path: Path, 
-        msa_path: Path, 
-        msa_trim_path: Path, 
-        tree_path: Path,
-        completed_msa: bool = False,
-        completed_msa_trim: bool = False,
-        completed_tree: bool = False
-        ):
+    fasta_path: Path,
+    msa_path: Path,
+    msa_trim_path: Path,
+    tree_path: Path,
+    completed_msa: bool = False,
+    completed_msa_trim: bool = False,
+    completed_tree: bool = False,
+):
     """
     From a FASTA file, run MSA and tree building to produce a Newick tree for annotation.
     If the MSA, trimmed MSA, or tree already exist (e.g. from a previous run), they will be reused.
     """
-    
+
     # run MSA
     if not completed_msa:
-        run_mafft(
-            input_fasta=fasta_path, 
-            output_fasta=msa_path
-            )
-    
+        run_mafft(input_fasta=fasta_path, output_fasta=msa_path)
+
     # trim MSA
     if not completed_msa_trim:
         trim_msa_by_gap_fraction(
-            input_alignment=msa_path,
-            output_alignment=msa_trim_path,
-            gap_threshold=0.9
-            )
+            input_alignment=msa_path, output_alignment=msa_trim_path, gap_threshold=0.9
+        )
 
     # run FastTree to build tree for annotation
     if not completed_tree:
-        run_fasttree(
-            input_alignment=msa_trim_path,
-            output_tree=tree_path
-            )
-    
+        run_fasttree(input_alignment=msa_trim_path, output_tree=tree_path)
 
-def assign_2ODD_props(tree: Tree, 
-                      seq_to_2ODD_id: dict[str, str]=SEQ_TO_2ODD_ID, 
-                      candidate_headers: set[str]=set()
-                      ):
+
+def assign_2ODD_props(
+    tree: Tree,
+    seq_to_2ODD_id: dict[str, str] = SEQ_TO_2ODD_ID,
+    candidate_headers: set[str] = set(),
+):
     """
-    Take a ete4 Tree / PhyloTree and assign the 2ODD_id to leaf's properties. 
+    Take a ete4 Tree / PhyloTree and assign the 2ODD_id to leaf's properties.
     If the leaf is an ingroup 2ODD, assign the corresponding ODD_id. If the leaf corresponds to a minor 2ODD cluster only, assig "minor_2ODD_cluster" as 2ODD_id.
     If the leaf is not an ingroup 2ODD, assign "candidate" as 2ODD_id.
 
     If the leaf is a characterized 2ODD, additionally assign "function" and "metabolic_pathway" to properties.
 
-    Return modified tree. 
+    Return modified tree.
     """
 
     for leaf in tree.leaves():
 
         if is_char_bait_sequence(leaf.name):
             accession, function, metabolic_pathway, tax_id = leaf.name.split("__")
-            leaf.add_props(
-                function=function,
-                metabolic_pathway=metabolic_pathway
-            )
+            leaf.add_props(function=function, metabolic_pathway=metabolic_pathway)
 
         if leaf.name in seq_to_2ODD_id:
             two_odd_id = seq_to_2ODD_id[leaf.name]
@@ -306,14 +298,15 @@ def assign_2ODD_props(tree: Tree,
                 leaf.add_props(two_odd_id=two_odd_id)
         elif leaf.name in candidate_headers:
             leaf.add_props(two_odd_id="candidate")
-        
+
         else:
-            raise ValueError(f"Leaf name {leaf.name} not found in seq_to_2ODD_id or candidate_headers. \
-                             Check if all sequences in the annotation fasta are accounted for in the seq_to_2ODD_id mapping or candidate_headers set.")
+            raise ValueError(
+                f"Leaf name {leaf.name} not found in seq_to_2ODD_id or candidate_headers. \
+                             Check if all sequences in the annotation fasta are accounted for in the seq_to_2ODD_id mapping or candidate_headers set."
+            )
 
 
-
-def assign_plant_group_props(tree:Tree |PhyloTree):
+def assign_plant_group_props(tree: Tree | PhyloTree):
     """
     Take a ete4 Tree / PhyloTree and assign plant group properties to the leaves based on their taxonomic lineage.
         - Algae
@@ -325,29 +318,29 @@ def assign_plant_group_props(tree:Tree |PhyloTree):
         - Basal Angiosperms
         - Monocots
         - Dicots (eudicots)
-    Note that the tree.annotate_ncbi_taxa() function must have been run beforehand to populate the "named_lineage" property for each leaf, 
-    which contains the taxonomic lineage as a list of taxonomic names. 
+    Note that the tree.annotate_ncbi_taxa() function must have been run beforehand to populate the "named_lineage" property for each leaf,
+    which contains the taxonomic lineage as a list of taxonomic names.
     """
 
     GROUP_COLORS = {
-            "Algae": "#574104",
-            "Lycophytes": "#ab730c",
-            "Liverworts": "#faaf00",
-            "Ferns": "#c1d717",
-            "Mosses": "#89be86",
-            "Gymnosperms": "#076247",
-            "Basal Angiosperms": "#3BA0BC",
-            "Monocots": "#7502d9",
-            "Dicots": "#edc5ec",
-        }
-    
+        "Algae": "#574104",
+        "Lycophytes": "#ab730c",
+        "Liverworts": "#faaf00",
+        "Ferns": "#c1d717",
+        "Mosses": "#89be86",
+        "Gymnosperms": "#076247",
+        "Basal Angiosperms": "#3BA0BC",
+        "Monocots": "#7502d9",
+        "Dicots": "#edc5ec",
+    }
+
     def classify_plant(node):
         lineage = [t.lower() for t in node.props["named_lineage"]]
 
         if "zygnematophyceae" in lineage:
             return "Algae"
         elif "lycopodiopsida" in lineage:
-            return "Lycophytes"    #Non-seed vascular plants
+            return "Lycophytes"  # Non-seed vascular plants
         elif "polypodiopsida" in lineage:
             return "Ferns"
         elif "bryophyta" in lineage or "anthocerotophyta" in lineage:
@@ -356,18 +349,17 @@ def assign_plant_group_props(tree:Tree |PhyloTree):
             return "Liverworts"
         if "acrogymnospermae" in lineage:
             return "Gymnosperms"
-        elif any(x in lineage for x in ["amborellales",
-            "nymphaeales",
-            "austrobaileyales", 
-            "magnoliidae"]):
+        elif any(
+            x in lineage
+            for x in ["amborellales", "nymphaeales", "austrobaileyales", "magnoliidae"]
+        ):
             return "Basal Angiosperms"
         elif "liliopsida" in lineage:
             return "Monocots"
-        elif any(x in lineage for x in ["eudicotyledons", 
-                                        "magnoliopsida", 
-                                        "mesangiospermae"]):
+        elif any(
+            x in lineage for x in ["eudicotyledons", "magnoliopsida", "mesangiospermae"]
+        ):
             return "Dicots"
-
 
         else:
             print(f"Plant group couldnt be mapped for node {node.props['sci_name']}")
@@ -376,11 +368,8 @@ def assign_plant_group_props(tree:Tree |PhyloTree):
     for leaf in tree.leaves():
         plant_group = classify_plant(leaf)
         leaf.add_props(
-            plant_group=plant_group,
-            color=GROUP_COLORS.get(plant_group, None)
+            plant_group=plant_group, color=GROUP_COLORS.get(plant_group, None)
         )
-
-
 
 
 def build_distance_lookup(tree):
@@ -396,10 +385,7 @@ def build_distance_lookup(tree):
 
     # build lookup dict
     dist = {
-        names[i]: {
-            names[j]: dm[i][j]
-            for j in range(len(names))
-        }
+        names[i]: {names[j]: dm[i][j] for j in range(len(names))}
         for i in range(len(names))
     }
 
@@ -416,20 +402,22 @@ def get_root_id(two_odd_id: str, parent_map: dict[str, str]) -> str:
     return two_odd_id
 
 
-def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=None) -> list[list[Tree | PhyloTree]]:
+def get_clusters(
+    t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]] = None
+) -> list[list[Tree | PhyloTree]]:
     """
     Extract maximal monophyletic clusters based on 'two_odd_id',
     treating 'candidate' as transparent (ignored for identity, included in clusters).
 
     All leaves under a valid 2ODD clade are included, including edge candidates.
     """
+
     def same_parent_only(child_ids: set[str]) -> bool:
         def root_id(x):
             return x.rstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ") if x else x
 
         roots = {root_id(cid) for cid in child_ids}
         return len(roots) == 1
-
 
     clusters = []
     node_to_id = {}
@@ -463,8 +451,6 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
 
         node_to_id[node] = node_id
 
-
-
     # --- Step 2: extract maximal real clades (top-down) ---
     assigned = set()
 
@@ -486,7 +472,7 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
         #  then we are in the middle of a 2ODD01 clade and should not start a new cluster here.
         if node_id != parent_id:
 
-            # all leaves under this node are part of the same cluster, 
+            # all leaves under this node are part of the same cluster,
             # even if some are candidates or nested 2ODD IDs
             leaves = list(node.leaves())
 
@@ -501,19 +487,22 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
                     candidate_leaves.append(leaf)
                     continue
 
-                # for example if leaf_2odd _id is 11A and node_id is 11, 
-                # then we consider this leaf as nested. 
+                # for example if leaf_2odd _id is 11A and node_id is 11,
+                # then we consider this leaf as nested.
                 # This is an edge case that needs to be handled
                 # we know for example, that 2ODD14 represents F3H clade
-                # and we also know that the FNSI clade sits inside the F3H clade. 
+                # and we also know that the FNSI clade sits inside the F3H clade.
                 # Thus, 2ODD14A is a nested clade and we need to resolve this cluster separately.
-                if leaf_2odd_id != node_id and get_root_id(leaf_2odd_id, PARENT_DICT) == node_id:
-                    # the leaves under a 2ODD ID (e.g., 2ODD11) can contain multiple nested 2ODD IDs 
+                if (
+                    leaf_2odd_id != node_id
+                    and get_root_id(leaf_2odd_id, PARENT_DICT) == node_id
+                ):
+                    # the leaves under a 2ODD ID (e.g., 2ODD11) can contain multiple nested 2ODD IDs
                     # e.g. 2ODD11A and 2ODD11B
                     # this will be resolved below
                     nested_2ODD_id_seq_to_id[leaf] = leaf_2odd_id
                 else:
-                    # this list will never contain nested 2ODD IDs nor candidates, 
+                    # this list will never contain nested 2ODD IDs nor candidates,
                     # only "pure" 2ODD IDs that match the current node_id (e.g. 2ODD11)
                     two_odd_id_leaves.append(leaf)
 
@@ -522,17 +511,17 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
                 # if no nested 2ODDs, simply assign all leaves (including candidates) to the same cluster
                 clusters.append(leaves)
                 assigned.update(leaves)
-                continue  
+                continue
 
             # --- there are nested 2ODD IDs ---
-            # makes things a bit more complicated 
+            # makes things a bit more complicated
             # we want to separate the nested 2ODD IDs from the 2ODD ID above (ie., 2ODD14A from 2ODD14)
-            # but we cannot just put them in a differnt cluster. 
+            # but we cannot just put them in a differnt cluster.
             # the nested cluster may be split into multiple clusters (e.g. not all share the same LCA)
             # and there can be candidate seqs that need to be resoved
-            # 
-            # we must first identify the nested clusters 
-            # by finding the LCA of all leaves with the same nested 2ODD ID (e.g. 2ODD14A) 
+            #
+            # we must first identify the nested clusters
+            # by finding the LCA of all leaves with the same nested 2ODD ID (e.g. 2ODD14A)
             # and then extract those nested clusters from the larger cluster (e.g. 2ODD14).
             assigned_nested_nodes = set()
             nested_clusters = []
@@ -541,7 +530,7 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
                 # still in the same cluster, e.g. 2ODD14, ignore
                 if subnode_id == node_id:
                     continue  # same cluster, ignore
-                
+
                 if subnode in assigned_nested_nodes:
                     continue  # already assigned as part of another nested cluster, ignore
 
@@ -550,7 +539,11 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
                     # this is a nested cluster (e.g. 2ODD14A inside 2ODD14)
                     assigned_nested_nodes.update(list(subnode.traverse("preorder")))
 
-                    nested_leaves = list(leaf for leaf in subnode.leaves() if leaf in nested_2ODD_id_seq_to_id)
+                    nested_leaves = list(
+                        leaf
+                        for leaf in subnode.leaves()
+                        if leaf in nested_2ODD_id_seq_to_id
+                    )
                     nested_clusters.append(nested_leaves)
 
             # --- resolve candidates ---
@@ -579,7 +572,9 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
                         two_odd_id_leaves.append(candidate)
             else:
                 if candidate_leaves:
-                    print(f"Warning: candidate leaves found in cluster {node_id} but no distance dict provided.")
+                    print(
+                        f"Warning: candidate leaves found in cluster {node_id} but no distance dict provided."
+                    )
 
             # --- store clusters ---
             if two_odd_id_leaves:
@@ -588,7 +583,6 @@ def get_clusters(t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]]=Non
             if nested_clusters:
                 clusters.extend(nested_clusters)
                 assigned.update(leaf for cluster in nested_clusters for leaf in cluster)
-
 
     # --- Step 3: leftover candidates (not inside any real clade) ---
     for leaf in t.leaves():
@@ -616,9 +610,7 @@ def compute_cluster_neighbors(clusters, dist_dict):
                 continue
 
             min_dist = min(
-                dist_dict[a.name][b.name]
-                for a in cluster_a
-                for b in cluster_b
+                dist_dict[a.name][b.name] for a in cluster_a for b in cluster_b
             )
 
             # strictly better OR tie → pick smaller index
@@ -628,16 +620,14 @@ def compute_cluster_neighbors(clusters, dist_dict):
                 best_dist = min_dist
                 best_j = j
 
-        neighbors[f"{i}"] = {
-            "closest_cluster": best_j,
-            "distance": round(best_dist, 3)
-        }
+        neighbors[f"{i}"] = {"closest_cluster": best_j, "distance": round(best_dist, 3)}
 
     return neighbors
 
 
-
-def two_odd_id_to_cluster_indices(clusters: list[list[Tree | PhyloTree]]) -> dict[str, list[int]]:
+def two_odd_id_to_cluster_indices(
+    clusters: list[list[Tree | PhyloTree]],
+) -> dict[str, list[int]]:
     """
     Build a dictionary mapping each two_odd_id to the list of cluster indices where it occurs.
 
@@ -660,14 +650,17 @@ def two_odd_id_to_cluster_indices(clusters: list[list[Tree | PhyloTree]]) -> dic
     id_to_indices = {}
     for idx, cluster in enumerate(clusters):
         two_odd_id = next(
-    (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
-    "candidates_only"
-)
+            (
+                node.props.get("two_odd_id")
+                for node in cluster
+                if node.props.get("two_odd_id") != "candidate"
+            ),
+            "candidates_only",
+        )
         if two_odd_id not in id_to_indices:
             id_to_indices[two_odd_id] = []
         id_to_indices[two_odd_id].append(idx)
     return id_to_indices
-
 
 
 def seq_to_cluster_idx(clusters: list[list[Tree | PhyloTree]]) -> dict[str, int]:
@@ -697,12 +690,11 @@ def seq_to_cluster_idx(clusters: list[list[Tree | PhyloTree]]) -> dict[str, int]
     return seq_id_to_idx
 
 
-
 def cluster_meta_info(
     clusters: list[list[Tree | PhyloTree]],
     major_minor_2ODD_dict: dict[str, dict[str, list[str]]],
     two_odd_ingroups: set[str],
-    candidates: set[str]
+    candidates: set[str],
 ) -> dict[int, dict]:
     """
     Build metadata for each cluster in the clusters.
@@ -720,23 +712,26 @@ def cluster_meta_info(
     for idx, cluster in enumerate(clusters):
 
         cluster_id = next(
-            (node.props.get("two_odd_id") for node in cluster if node.props.get("two_odd_id") != "candidate"),
-            "candidates_only"
+            (
+                node.props.get("two_odd_id")
+                for node in cluster
+                if node.props.get("two_odd_id") != "candidate"
+            ),
+            "candidates_only",
         )
 
         num_candidates = sum(1 for node in cluster if node.name in candidates)
 
         num_ingroup_2ODD = sum(
-            1 for node in cluster
+            1
+            for node in cluster
             if node.name in two_odd_ingroups and node.name not in candidates
         )
 
         # --- percentage ---
         percentage = None
 
-        if (
-            num_ingroup_2ODD > 0 and cluster_id in two_odd_to_ingroup_size
-        ):
+        if num_ingroup_2ODD > 0 and cluster_id in two_odd_to_ingroup_size:
             total = two_odd_to_ingroup_size[cluster_id]
 
             percentage = round(num_ingroup_2ODD / total, 3)
@@ -759,9 +754,9 @@ def cluster_meta_info(
     return meta_info
 
 
-
-
-def clusters_meta_to_df(meta_info: dict[str, dict], neighboring_clusters: dict[int, tuple[int, float]]) -> pd.DataFrame:
+def clusters_meta_to_df(
+    meta_info: dict[str, dict], neighboring_clusters: dict[int, tuple[int, float]]
+) -> pd.DataFrame:
     """
     Convert clusters metadata dictionary into a pandas DataFrame.
 
@@ -798,8 +793,10 @@ def clusters_meta_to_df(meta_info: dict[str, dict], neighboring_clusters: dict[i
             "n_ingroup_2ODD": data.get("num_ingroup_2ODD"),
             "n_candidates": data.get("num_candidates"),
             "plant_groups": ", ".join(data.get("plant_groups", [])),
-            "neighboring_cluster_idx": int(neighboring_clusters[idx]["closest_cluster"]),
-            "neighboring_cluster_dist": neighboring_clusters[idx]["distance"]
+            "neighboring_cluster_idx": int(
+                neighboring_clusters[idx]["closest_cluster"]
+            ),
+            "neighboring_cluster_dist": neighboring_clusters[idx]["distance"],
         }
         rows.append(row)
 
@@ -841,16 +838,25 @@ def get_candidate_to_char_baits_df(
     for candidate in candidate_headers:
         # sort closest baits by distance
         closest_char_baits = sorted(
-            char_baits,
-            key=lambda bait: dist_dict[candidate][bait]
+            char_baits, key=lambda bait: dist_dict[candidate][bait]
         )[:3]
 
         candidate_char_baits_dict[candidate] = {
             "cluster_idx": seq_id_to_idx_dict.get(candidate, None),
             "closest_char_bait": closest_char_baits[0] if closest_char_baits else None,
-            "closest_char_bait_dist": dist_dict[candidate][closest_char_baits[0]] if closest_char_baits else None,
-            "second_closest_char_bait": closest_char_baits[1] if len(closest_char_baits) > 1 else None,
-            "second_closest_char_bait_dist": dist_dict[candidate][closest_char_baits[1]] if len(closest_char_baits) > 1 else None
+            "closest_char_bait_dist": (
+                dist_dict[candidate][closest_char_baits[0]]
+                if closest_char_baits
+                else None
+            ),
+            "second_closest_char_bait": (
+                closest_char_baits[1] if len(closest_char_baits) > 1 else None
+            ),
+            "second_closest_char_bait_dist": (
+                dist_dict[candidate][closest_char_baits[1]]
+                if len(closest_char_baits) > 1
+                else None
+            ),
         }
 
     # If there are no candidates, return an empty DataFrame with the
@@ -873,7 +879,6 @@ def get_candidate_to_char_baits_df(
         .rename(columns={"index": "candidate"})
     )
     return df
-
 
 
 def add_consensus_annotations(df, threshold=0.9, min_size=2):
@@ -900,10 +905,10 @@ def add_consensus_annotations(df, threshold=0.9, min_size=2):
     def get_consensus(values):
         if len(values) < min_size:
             return None
-        
+
         counts = Counter(values)
         most_common, count = counts.most_common(1)[0]
-        
+
         if count / len(values) >= threshold:
             return most_common
         return None
@@ -941,13 +946,11 @@ def add_annotation_columns(df, threshold=0.8):
     df["annotated_two_odd_id"] = df["two_odd_id"].where(well_resolved, None)
 
     df["annotated_function"] = df["consensus_function"].where(
-        well_resolved & df["consensus_function"].notna(),
-        None
+        well_resolved & df["consensus_function"].notna(), None
     )
 
     df["annotated_metabolic_pathway"] = df["consensus_pathway"].where(
-        well_resolved & df["consensus_pathway"].notna(),
-        None
+        well_resolved & df["consensus_pathway"].notna(), None
     )
 
     # --- REORDER COLUMNS ---
@@ -955,44 +958,42 @@ def add_annotation_columns(df, threshold=0.8):
         "candidate",
         "annotated_two_odd_id",
         "annotated_function",
-        "annotated_metabolic_pathway"
+        "annotated_metabolic_pathway",
     ]
 
     cluster_cols = [
-            "cluster_index",
-            "two_odd_id",
-            "perc_of_ingroup_2ODD",
-            "n_ingroup_2ODD",
-            "n_candidates",
-            "plant_groups",
-            "neighboring_cluster_idx",
-            "neighboring_cluster_dist"
+        "cluster_index",
+        "two_odd_id",
+        "perc_of_ingroup_2ODD",
+        "n_ingroup_2ODD",
+        "n_candidates",
+        "plant_groups",
+        "neighboring_cluster_idx",
+        "neighboring_cluster_dist",
     ]
-
-
 
     # everything else = bait + metadata columns
-    other_cols = [
-        col for col in df.columns
-        if col not in first_cols + cluster_cols
-    ]
+    other_cols = [col for col in df.columns if col not in first_cols + cluster_cols]
 
     ordered_cols = first_cols + cluster_cols + other_cols
 
     return df[ordered_cols]
 
-#%%---------------------------------------------------------------
+
+# %%---------------------------------------------------------------
 def run(
-        result_dir: Path, 
-        config: dict, 
-        seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer", 
-        completed_annotation_steps: dict | None = None
-        ):
-    
+    result_dir: Path,
+    config: dict,
+    seq_sim_method: Literal["hmmer", "diamond", "blastp", "all"] = "hmmer",
+    completed_annotation_steps: dict | None = None,
+):
+
     annotation_fasta_path = result_dir / ANNOTATION_FASTA
     ingroup_2ODD_fasta = config["annotate"]["bait_sequence_collection"]
     major_minor_2ODD_dict = json.load(open(config["annotate"]["major_minor_2ODD_ids"]))
-    major_char_2ODD_info_dict = json.load(open(config["annotate"]["major_2ODDs_functional_characterization"]))
+    major_char_2ODD_info_dict = json.load(
+        open(config["annotate"]["major_2ODDs_functional_characterization"])
+    )
     annotation_msa_path = result_dir / ANNOTATION_MSA
     annotation_msa_trim_path = result_dir / ANNOTATION_MSA_TRIM
     annotation_tree_path = result_dir / ANNOTATION_TREE
@@ -1000,23 +1001,43 @@ def run(
     reuse_existing = config["pipeline"].get("reuse_existing", False)
 
     if not reuse_existing:
-        completed_annotation_steps = None  # ignore already completed steps if not reusing existing results
+        completed_annotation_steps = (
+            None  # ignore already completed steps if not reusing existing results
+        )
 
     # ========== FROM FASTA TO NWK ==========
 
-    if completed_annotation_steps is None or not completed_annotation_steps["annotation_fasta"]:
+    if (
+        completed_annotation_steps is None
+        or not completed_annotation_steps["annotation_fasta"]
+    ):
         create_annotation_fasta(
             results_dir=result_dir,
             ingroup_2ODD_fasta=ingroup_2ODD_fasta,
             output_fasta=annotation_fasta_path,
-            seq_sim_method=seq_sim_method
+            seq_sim_method=seq_sim_method,
         )
 
-    if completed_annotation_steps is None or not completed_annotation_steps["annotation_tree"]:
-        completed_msa = completed_annotation_steps.get("annotation_msa") if completed_annotation_steps else False
-        completed_msa_trim = completed_annotation_steps.get("annotation_msa_trim") if completed_annotation_steps else False
-        completed_tree = completed_annotation_steps.get("annotation_tree") if completed_annotation_steps else False 
-        
+    if (
+        completed_annotation_steps is None
+        or not completed_annotation_steps["annotation_tree"]
+    ):
+        completed_msa = (
+            completed_annotation_steps.get("annotation_msa")
+            if completed_annotation_steps
+            else False
+        )
+        completed_msa_trim = (
+            completed_annotation_steps.get("annotation_msa_trim")
+            if completed_annotation_steps
+            else False
+        )
+        completed_tree = (
+            completed_annotation_steps.get("annotation_tree")
+            if completed_annotation_steps
+            else False
+        )
+
         from_fasta_to_nwk(
             fasta_path=annotation_fasta_path,
             msa_path=annotation_msa_path,
@@ -1024,36 +1045,36 @@ def run(
             tree_path=annotation_tree_path,
             completed_msa=completed_msa,
             completed_msa_trim=completed_msa_trim,
-            completed_tree=completed_tree
-            )
+            completed_tree=completed_tree,
+        )
 
     # load tree
-    tree = PhyloTree(open(annotation_tree_path), sp_naming_function=lambda name: name.split("__")[-1])
-    tax2names, tax2lineages, tax2rank = tree.annotate_ncbi_taxa(taxid_attr='species')
-    tree.ladderize()  
+    tree = PhyloTree(
+        open(annotation_tree_path), sp_naming_function=lambda name: name.split("__")[-1]
+    )
+    tax2names, tax2lineages, tax2rank = tree.annotate_ncbi_taxa(taxid_attr="species")
+    tree.ladderize()
     if save_tree:
         tree.write(outfile=str(result_dir / ANNOTATION_TREE))
 
     # ========== ANNOTATE TREE WITH 2ODD IDS AND PLANT GROUPS ==========
     ingroup_seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict)
     candidate_headers, ingroup_headers = split_seqs_by_2ODD_membership(
-        seq_to_2ODD_id=ingroup_seq_to_2ODD_id,
-        tree=tree
+        seq_to_2ODD_id=ingroup_seq_to_2ODD_id, tree=tree
     )
     assign_plant_group_props(tree)
 
     assign_2ODD_props(
-        tree=tree, 
-        seq_to_2ODD_id=ingroup_seq_to_2ODD_id, 
-        candidate_headers=candidate_headers
+        tree=tree,
+        seq_to_2ODD_id=ingroup_seq_to_2ODD_id,
+        candidate_headers=candidate_headers,
     )
-
 
     # ========== CREATE DATAFRAMES ==========
 
-    # cluster_df: 
-    # representing the clusters of sequences in the tree, 
-    # their assigned 2ODD ID, the percentage of ingroup 2ODDs in the cluster, 
+    # cluster_df:
+    # representing the clusters of sequences in the tree,
+    # their assigned 2ODD ID, the percentage of ingroup 2ODDs in the cluster,
     # and the plant groups represented in the cluster
     dist_dict = build_distance_lookup(tree)
     clusters = get_clusters(tree, dist_dict=dist_dict)
@@ -1062,41 +1083,50 @@ def run(
         clusters=clusters,
         major_minor_2ODD_dict=major_minor_2ODD_dict,
         two_odd_ingroups=ingroup_headers,
-        candidates=candidate_headers
+        candidates=candidate_headers,
     )
     cluster_df = clusters_meta_to_df(meta_info, neighboring_clusters)
 
-
     # 2ODD_info_df:
     # all 2ODD ids and, if applicable, their associated functions and metabolic pathways shown in experiments
-    two_odd_info_df = pd.DataFrame.from_dict(major_char_2ODD_info_dict, orient="index").reset_index().rename(columns={"index": "two_odd_id"})
-    two_odd_info_df.rename(columns={
-        "functions": "associated_functions",
-        "metabolic_pathways": "associated_metabolic_pathways",
-        "char_2ODD_ids": "associated_characterized_bait_sequences"
-    }, inplace=True)
+    two_odd_info_df = (
+        pd.DataFrame.from_dict(major_char_2ODD_info_dict, orient="index")
+        .reset_index()
+        .rename(columns={"index": "two_odd_id"})
+    )
+    two_odd_info_df.rename(
+        columns={
+            "functions": "associated_functions",
+            "metabolic_pathways": "associated_metabolic_pathways",
+            "char_2ODD_ids": "associated_characterized_bait_sequences",
+        },
+        inplace=True,
+    )
     two_odd_info_df = add_consensus_annotations(two_odd_info_df)
 
     # candidate_char_baits_df:
     # each row is a candidate sequence
-    # and gets assigned cluster idx, closest, and second closest characterized 2ODD sequence 
+    # and gets assigned cluster idx, closest, and second closest characterized 2ODD sequence
     # and the corresponding distance
     seq_id_to_idx = seq_to_cluster_idx(clusters)
-    
+
     candidate_char_baits_df = get_candidate_to_char_baits_df(
         candidate_headers=candidate_headers,
         ingroup_headers=ingroup_headers,
         dist_dict=dist_dict,
-        seq_id_to_idx_dict=seq_id_to_idx
+        seq_id_to_idx_dict=seq_id_to_idx,
     )
-        
+
     # create left join of candidate_char_baits_df with two_odd_info_df and cluster_df to get a full picture of each candidate's assigned cluster, closest characterized baits, and the known functions of those baits
-    candidate_char_baits_full_df = candidate_char_baits_df.merge(cluster_df, how="left", left_on="cluster_idx", right_on="cluster_index").merge(two_odd_info_df, how="left", left_on="two_odd_id", right_on="two_odd_id")
+    candidate_char_baits_full_df = candidate_char_baits_df.merge(
+        cluster_df, how="left", left_on="cluster_idx", right_on="cluster_index"
+    ).merge(two_odd_info_df, how="left", left_on="two_odd_id", right_on="two_odd_id")
     annotation_df = add_annotation_columns(candidate_char_baits_full_df)
 
     # save dataframe
     annotation_df.to_csv(result_dir / ANNOTATION_CSV, index=False)
 
     return annotation_df
+
 
 # %%

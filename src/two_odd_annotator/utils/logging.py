@@ -6,7 +6,6 @@ from email import message
 from pathlib import Path
 from typing import Any, Mapping
 
-
 LOG_FILENAME = "run.log"
 
 
@@ -29,7 +28,7 @@ def init_log(output_dir: str, logfile_name: str = LOG_FILENAME) -> Path:
 
     log_path = out_dir / logfile_name
     if log_path.is_file():
-        # If the log already exists, it is overwritten to start fresh for each run, 
+        # If the log already exists, it is overwritten to start fresh for each run,
         # but you could change this behavior to keep a cumulative log.
         log_path.unlink()
 
@@ -48,7 +47,5 @@ def log_line(logfile_path: str, message: str) -> None:
         f.write(f"{_now_iso()} - {message}\n")
     print(message)  # Also print to console for real-time feedback
 
+
 __all__ = ["LOG_FILENAME", "init_log", "log_line"]
-
-
-

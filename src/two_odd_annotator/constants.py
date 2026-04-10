@@ -21,7 +21,7 @@ FILTERED_HMMER_FASTA = "filtered_hmmer.fasta"
 FILTERED_BLASTP_FASTA = "filtered_blastp.fasta"
 
 # combines all filtered FASTA files and ingroup sequences for annotation step
-ANNOTATION_FASTA = "annotation.fasta" 
+ANNOTATION_FASTA = "annotation.fasta"
 ANNOTATION_MSA = "annotation_msa.fasta"
 ANNOTATION_MSA_TRIM = "annotation_msa_trim.fasta"
 ANNOTATION_TREE = "annotation_tree.nwk"

@@ -7,36 +7,32 @@ from bio_tools.taxa.taxonomy import map_scientific_notation_to_tax_id
 
 
 from two_odd_annotator.constants import (
-    RESULTS_DIR, 
-
-    METADATA_YML, 
-    CLEAN_FASTA_HEADERS_JSON, 
-
-    DIAMOND_RESULTS, 
-    HMMER_RESULTS, 
-    BLASTP_RESULTS, 
-
-    FILTERED_DIAMOND_HITS, 
-    FILTERED_HMMER_HITS, 
-    FILTERED_BLASTP_HITS, 
-
-    FILTERED_DIAMOND_FASTA, 
-    FILTERED_HMMER_FASTA, 
+    RESULTS_DIR,
+    METADATA_YML,
+    CLEAN_FASTA_HEADERS_JSON,
+    DIAMOND_RESULTS,
+    HMMER_RESULTS,
+    BLASTP_RESULTS,
+    FILTERED_DIAMOND_HITS,
+    FILTERED_HMMER_HITS,
+    FILTERED_BLASTP_HITS,
+    FILTERED_DIAMOND_FASTA,
+    FILTERED_HMMER_FASTA,
     FILTERED_BLASTP_FASTA,
-
     ANNOTATION_FASTA,
     ANNOTATION_MSA,
     ANNOTATION_MSA_TRIM,
     ANNOTATION_TREE,
-    ANNOTATION_CSV
+    ANNOTATION_CSV,
 )
 
 from two_odd_annotator.utils.io import write_metadata
+from two_odd_annotator.utils.logging import log_line
 
 
 class State:
     """
-    Manage the state of the two_odd_annotator pipeline. 
+    Manage the state of the two_odd_annotator pipeline.
 
 
     This class is responsible for:
@@ -46,11 +42,21 @@ class State:
     - Managing the output directory structure and metadata for each species.
 
     """
-    def __init__(self, input_path: Path, output_base_dir: Path):
+
+    def __init__(
+        self,
+        input_path: Path,
+        output_base_dir: Path,
+        log_path: Path | str | None = None,
+    ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
 
-        self.input_fasta_paths = []  
+        # optional path to a run log where initialization messages can be
+        # written; used by Runner but not required by tests.
+        self.log_path = str(log_path) if log_path is not None else None
+
+        self.input_fasta_paths = []
         self._validate_fasta_input_exists()
 
         # store which steps have been completed for each species subdir,
@@ -78,7 +84,7 @@ class State:
             "plot_3": False,
         }
 
-        # store metadata for each species, 
+        # store metadata for each species,
         #  including inferred scientific name, tax id, original input file path, and any other relevant info
         self.metadata = None
 
@@ -93,7 +99,7 @@ class State:
         while "." in name:
             name = name.rsplit(".", 1)[0]
         return name
-    
+
     def _infer_species_from_file_name(self, file_name: str) -> str:
         """Infer species name from an input FASTA file name.
 
@@ -109,11 +115,11 @@ class State:
             raise ValueError(f"Could not infer species name from file: {file_name}")
 
         return scientific_name
-    
+
     def _fetch_completed_pipeline_steps_output_dir(self):
         """
-        Check which annotation steps have been completed by checking the 
-        output directory for the presence of expected output files. 
+        Check which annotation steps have been completed by checking the
+        output directory for the presence of expected output files.
         This can be used to determine which steps need to be run / re-run when resuming from an existing output directory.
 
         """
@@ -127,8 +133,7 @@ class State:
         if (self.output_base_dir / ANNOTATION_TREE).exists():
             self.annotation_steps_completed["annotation_tree"] = True
         if (self.output_base_dir / ANNOTATION_CSV).exists():
-            self.annotation_steps_completed["annotation_csv"] = True   
-
+            self.annotation_steps_completed["annotation_csv"] = True
 
     def _fetch_completed_pipeline_steps_for_subdir(self, subdir_path: Path) -> dict:
         """
@@ -143,9 +148,21 @@ class State:
             "visualize": None,
         }
 
-        expected_files_diamond = [DIAMOND_RESULTS, FILTERED_DIAMOND_HITS, FILTERED_DIAMOND_FASTA]
-        expected_files_hmmer = [HMMER_RESULTS, FILTERED_HMMER_HITS, FILTERED_HMMER_FASTA]
-        expected_files_blastp = [BLASTP_RESULTS, FILTERED_BLASTP_HITS, FILTERED_BLASTP_FASTA]
+        expected_files_diamond = [
+            DIAMOND_RESULTS,
+            FILTERED_DIAMOND_HITS,
+            FILTERED_DIAMOND_FASTA,
+        ]
+        expected_files_hmmer = [
+            HMMER_RESULTS,
+            FILTERED_HMMER_HITS,
+            FILTERED_HMMER_FASTA,
+        ]
+        expected_files_blastp = [
+            BLASTP_RESULTS,
+            FILTERED_BLASTP_HITS,
+            FILTERED_BLASTP_FASTA,
+        ]
 
         # check for each filtering method if all expected files are present, if so, add to the list of completed filtering methods
         if all((subdir_path / f).exists() for f in expected_files_diamond):
@@ -163,13 +180,11 @@ class State:
                 pipeline_steps["seq_sim_filter"] = []
             pipeline_steps["seq_sim_filter"].append("blastp")
 
-
         # append the dict of completed steps for the subdir to the overall results dict
         result = {subdir_path.name: pipeline_steps}
 
         return result
-    
-    
+
     # -----------INITIALIZATION METHODS ---------------
     def _validate_fasta_input_exists(self):
 
@@ -197,7 +212,9 @@ class State:
                 for f in files
                 if f.lower().endswith((".fasta", ".fa", ".faa")) and ".cds" not in f
                 # ensure to not take any files from the output directory if it is a subdirectory of the input directory
-                and not Path(root).resolve().is_relative_to(self.output_base_dir.resolve())
+                and not Path(root)
+                .resolve()
+                .is_relative_to(self.output_base_dir.resolve())
             ]
 
             if len(fasta_files) == 0:
@@ -221,8 +238,8 @@ class State:
 
     def _prepare_output_directory(self):
         """
-        Create the output base directory if it doesn't exist, 
-        and check for any completed pipeline steps in the output directory to determine which 
+        Create the output base directory if it doesn't exist,
+        and check for any completed pipeline steps in the output directory to determine which
         steps don't need to be re-run (if Runner.reuse_existing is set toTrue).
 
         The expected output directory files are:
@@ -244,37 +261,64 @@ class State:
         for orig_file_path in self.input_fasta_paths:
             orig_file = orig_file_path.name
 
-
             print(f"Initializing subdir for {orig_file}")
+            if self.log_path is not None:
+                log_line(self.log_path, f"Initializing subdir for {orig_file}")
             input_file_name = self._get_base_name(orig_file)
             inferred_sp_name = self._infer_species_from_file_name(input_file_name)
 
-            # with inferred species name, get tax id and true scientific name 
+            # with inferred species name, get tax id and true scientific name
             # (in case of misspellings in the filename)
-            tax_id_dict = map_scientific_notation_to_tax_id(inferred_sp_name, raise_on_error=True)
-            scientific_sp_name, tax_id = list(tax_id_dict.keys())[0], list(tax_id_dict.values())[0]
+            tax_id_dict = map_scientific_notation_to_tax_id(
+                inferred_sp_name, raise_on_error=True
+            )
+            scientific_sp_name, tax_id = (
+                list(tax_id_dict.keys())[0],
+                list(tax_id_dict.values())[0],
+            )
 
             subdir_folder_name = scientific_sp_name.replace(" ", "_")
-            cleaned_fasta_path = self.output_base_dir / subdir_folder_name / f"clean_{subdir_folder_name}.fasta"
+            cleaned_fasta_path = (
+                self.output_base_dir
+                / subdir_folder_name
+                / f"clean_{subdir_folder_name}.fasta"
+            )
 
             # all species info is stored in metadata dictionary
-            metadata_dict = {subdir_folder_name: {
-                "scientific_sp_name": scientific_sp_name,
-                "tax_id": tax_id,
-                "original_file_path": str(orig_file_path.resolve()),
-                "cleaned_fasta_path": str(cleaned_fasta_path.resolve())
-            }}
+            metadata_dict = {
+                subdir_folder_name: {
+                    "scientific_sp_name": scientific_sp_name,
+                    "tax_id": tax_id,
+                    "original_file_path": str(orig_file_path.resolve()),
+                    "cleaned_fasta_path": str(cleaned_fasta_path.resolve()),
+                }
+            }
 
             # create subdir for the species
             # first, check if subdir already exists (e.g. from a previous run)
             subdir_path = self.output_base_dir / subdir_folder_name
             if subdir_path.exists():
+                if self.log_path is not None:
+                    log_line(
+                        self.log_path, f"Using existing subdir {subdir_folder_name}"
+                    )
                 # check if metadata file exists, otherwise create it
-                if not (self.output_base_dir / subdir_folder_name / METADATA_YML).exists():
-                    write_metadata(output_path=self.output_base_dir / subdir_folder_name , metadata=metadata_dict)
+                if not (
+                    self.output_base_dir / subdir_folder_name / METADATA_YML
+                ).exists():
+                    write_metadata(
+                        output_path=self.output_base_dir / subdir_folder_name,
+                        metadata=metadata_dict,
+                    )
+                    if self.log_path is not None:
+                        log_line(
+                            self.log_path, f"Creating metadata for {subdir_folder_name}"
+                        )
 
                 # check if copied fasta file with cleaned headers exists, otherwise create it
-                if not (self.output_base_dir / subdir_folder_name / CLEAN_FASTA_HEADERS_JSON).exists():
+                if not (
+                    self.output_base_dir / subdir_folder_name / CLEAN_FASTA_HEADERS_JSON
+                ).exists():
                     write_clean_fasta_with_taxid(
                         input_fasta_path=orig_file_path,
                         output_dir=self.output_base_dir / subdir_folder_name,
@@ -284,11 +328,20 @@ class State:
                     )
 
                 # check if any results files from previous runs exist, if so, keep them, otherwise initialize empty results dict
-                result = self._fetch_completed_pipeline_steps_for_subdir(self.output_base_dir / subdir_folder_name)
+                result = self._fetch_completed_pipeline_steps_for_subdir(
+                    self.output_base_dir / subdir_folder_name
+                )
 
             else:
                 subdir_path.mkdir()
+                if self.log_path is not None:
+                    log_line(self.log_path, f"Creating subdir {subdir_folder_name}")
+
                 write_metadata(output_path=subdir_path, metadata=metadata_dict)
+                if self.log_path is not None:
+                    log_line(
+                        self.log_path, f"Creating metadata for {subdir_folder_name}"
+                    )
                 write_clean_fasta_with_taxid(
                     input_fasta_path=orig_file_path,
                     output_dir=subdir_path,
@@ -296,12 +349,19 @@ class State:
                     scientific_sp_name=scientific_sp_name,
                     tax_info=tax_id,
                 )
+                if self.log_path is not None:
+                    log_line(
+                        self.log_path,
+                        f"Writing cleaned FASTA for {subdir_folder_name}: {cleaned_fasta_path}",
+                    )
 
-                result = {subdir_folder_name: {
-                    "seq_sim_filter": None,
-                    "annotate": None,
-                    "visualize": None
-                }}
+                result = {
+                    subdir_folder_name: {
+                        "seq_sim_filter": None,
+                        "annotate": None,
+                        "visualize": None,
+                    }
+                }
 
             # append the result for the subdir to the overall results dict
             if self.results is None:
@@ -314,5 +374,3 @@ class State:
                 self.metadata = metadata_dict
             else:
                 self.metadata.update(metadata_dict)
-
-
