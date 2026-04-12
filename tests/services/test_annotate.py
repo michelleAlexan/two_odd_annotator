@@ -5,11 +5,6 @@ import pandas as pd
 from pathlib import Path
 from ete4 import PhyloTree
 
-from bio_tools.viz.tree import (
-    explore_tree_plant_groups,
-    explore_2ODD_IDs
-    )
-
 
 from two_odd_annotator.utils.io import load_config
 from two_odd_annotator.constants import (

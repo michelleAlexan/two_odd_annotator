@@ -124,7 +124,7 @@ Python dependencies are managed via the project’s `pyproject.toml`.
 ### Using uv (recommended for development)
 
 ```bash
-git clone https://github.com/michelleAlexan/two_odd_annotator.git
+git clone git@github.com:michelleAlexan/two_odd_annotator.git
 cd two_odd_annotator
 uv sync
 ```
