@@ -157,13 +157,16 @@ def create_annotation_fasta(
     seq_ids = set()
     with open(output_fasta, "w") as out_fasta:
         # write ingroup 2ODD sequences to annotation fasta
+        ingroups = set()
         for record in SeqIO.parse(ingroup_2ODD_fasta, "fasta"):
+            ingroups.add(record.id)
             if record.id in seq_ids:
                 continue
             SeqIO.write(record, out_fasta, "fasta")
             seq_ids.add(record.id)
 
         # write candidate sequences that passed the pre-filtering step
+        candidates = set()
         for subdir in results_dir.iterdir():
             if subdir.is_dir():
                 # when seq_sim_method == "all", include any filtered_*.fasta file;
@@ -175,10 +178,13 @@ def create_annotation_fasta(
 
                 for fasta_file in fasta_iter:
                     for record in SeqIO.parse(fasta_file, "fasta"):
+                        candidates.add(record.id)
                         if record.id in seq_ids:
                             continue
                         SeqIO.write(record, out_fasta, "fasta")
                         seq_ids.add(record.id)
+
+    return candidates, ingroups
 
 
 def split_seqs_by_2ODD_membership(
@@ -290,15 +296,15 @@ def assign_2ODD_props(
         if is_char_bait_sequence(leaf.name):
             accession, function, metabolic_pathway, tax_id = leaf.name.split("__")
             leaf.add_props(function=function, metabolic_pathway=metabolic_pathway)
-
-        if leaf.name in seq_to_2ODD_id:
+        if leaf.name in candidate_headers:
+            leaf.add_props(two_odd_id="candidate")
+        elif leaf.name in seq_to_2ODD_id:
             two_odd_id = seq_to_2ODD_id[leaf.name]
             if "minor" in two_odd_id:
                 leaf.add_props(two_odd_id="minor_2ODD_cluster")
             else:
                 leaf.add_props(two_odd_id=two_odd_id)
-        elif leaf.name in candidate_headers:
-            leaf.add_props(two_odd_id="candidate")
+
 
         else:
             raise ValueError(
@@ -890,7 +896,7 @@ def add_consensus_annotations(df, threshold=0.9, min_size=2):
     Parameters
     ----------
     df : pd.DataFrame
-        Must contain column 'associated_characterized_bait_sequences' (list of strings).
+        Must contain column 'associated_characterized_baits' (list of strings).
     threshold : float
         Fraction required for consensus (default: 0.9).
     min_size : int
@@ -918,7 +924,7 @@ def add_consensus_annotations(df, threshold=0.9, min_size=2):
     consensus_functions = []
     consensus_pathways = []
 
-    for ids in df["associated_characterized_bait_sequences"]:
+    for ids in df["associated_characterized_baits"]:
         if not ids:
             consensus_functions.append(None)
             consensus_pathways.append(None)
@@ -1013,7 +1019,7 @@ def run(
         completed_annotation_steps is None
         or not completed_annotation_steps["annotation_fasta"]
     ):
-        create_annotation_fasta(
+        candidate_headers, ingroup_headers = create_annotation_fasta(
             results_dir=result_dir,
             ingroup_2ODD_fasta=ingroup_2ODD_fasta,
             output_fasta=annotation_fasta_path,
@@ -1061,11 +1067,7 @@ def run(
 
     # ========== ANNOTATE TREE WITH 2ODD IDS AND PLANT GROUPS ==========
     ingroup_seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict)
-    candidate_headers, ingroup_headers = split_seqs_by_2ODD_membership(
-        seq_to_2ODD_id=ingroup_seq_to_2ODD_id, tree=tree
-    )
     assign_plant_group_props(tree)
-
     assign_2ODD_props(
         tree=tree,
         seq_to_2ODD_id=ingroup_seq_to_2ODD_id,
@@ -1096,14 +1098,7 @@ def run(
         .reset_index()
         .rename(columns={"index": "two_odd_id"})
     )
-    two_odd_info_df.rename(
-        columns={
-            "functions": "associated_functions",
-            "metabolic_pathways": "associated_metabolic_pathways",
-            "char_2ODD_ids": "associated_characterized_bait_sequences",
-        },
-        inplace=True,
-    )
+
     two_odd_info_df = add_consensus_annotations(two_odd_info_df)
 
     # candidate_char_baits_df:

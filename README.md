@@ -37,7 +37,7 @@ The `two_odd_annotator` relies on a carefully curated collection of “bait” 2
 As some functional classes of the *characterized* sequence collection are underrepresented or taxonomic diversity is limited, the bait sequence collection has been expanded by incorporating the 2ODD-like sequences from 200 plant species spanning 43 taxonomic orders. For the detailed expansion workflow on the expansion and careful curation and optimization of the bait sequence collection, checkout [bait_sequence_collection repository](https://github.com/michelleAlexan/bait_sequence_collection). 
 
 
-From this expanded set of ~14,000 sequences, a phylogenetic tree was constructed to identify well-supported functional clades (see Figure 1). Each was given a 2ODD ID in the format “2ODD#” (e.g. 2ODD14), and nested clades are denoted with an additional letter (e.g., it is known that the flavonoid-pathway-related gene FNSI (2OOD12A) is nested in the F3H (2ODD12) clade). This tree serves as the *curated reference tree* in downstream annotation steps. 
+From this expanded set of ~14,000 sequences, a phylogenetic tree was constructed to identify well-supported functional clades (see Figure 1). Each was given a 2ODD ID in the format “2ODD#” (e.g. 2ODD01), and nested clades are denoted with an additional letter (e.g., it is known that the flavonoid-pathway-related gene FNSI (2OOD13A) is nested in the F3H (2ODD13) clade). This tree serves as the *curated reference tree* in downstream annotation steps. 
 
 
 <p align="center">
@@ -127,6 +127,7 @@ Python dependencies are managed via the project’s `pyproject.toml`.
 git clone git@github.com:michelleAlexan/two_odd_annotator.git
 cd two_odd_annotator
 uv sync
+source .venv/bin/activate
 ```
 
 ### Using pip
@@ -137,6 +138,7 @@ In a fresh virtual environment:
 git clone https://github.com/michelleAlexan/two_odd_annotator.git
 cd two_odd_annotator
 pip install -e .
+source .venv/bin/activate
 ```
 
 ---
