@@ -1,10 +1,5 @@
-from datetime import datetime
 from pathlib import Path
 import os
-
-from bio_tools.files.fasta import write_clean_fasta_with_taxid
-from bio_tools.taxa.taxonomy import map_scientific_notation_to_tax_id
-
 
 from two_odd_annotator.constants import (
     RESULTS_DIR,
@@ -26,7 +21,8 @@ from two_odd_annotator.constants import (
     ANNOTATION_CSV,
 )
 
-from two_odd_annotator.utils.io import write_metadata
+from two_odd_annotator.utils.io import write_metadata, write_clean_fasta_with_taxid
+from two_odd_annotator.utils.taxonomy import map_scientific_notation_to_tax_id
 from two_odd_annotator.utils.logging import log_line
 
 

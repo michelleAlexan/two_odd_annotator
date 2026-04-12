@@ -10,8 +10,8 @@ from collections import Counter
 import re
 from typing import Literal
 
-from bio_tools.msa.mafft import run_mafft, trim_msa_by_gap_fraction
-from bio_tools.phylo.fasttree import run_fasttree
+from two_odd_annotator.utils.msa import run_mafft, trim_msa_by_gap_fraction
+from two_odd_annotator.utils.phylo import run_fasttree
 
 
 from two_odd_annotator.constants import (
@@ -34,6 +34,7 @@ MAJOR_2ODD_INFO_DICT = json.load(
 
 
 # %% ========= FUNCTIONS ========
+
 def is_char_bait_sequence(leaf_name: str) -> bool:
     return len(leaf_name.split("__")) == 4
 
@@ -403,7 +404,8 @@ def get_root_id(two_odd_id: str, parent_map: dict[str, str]) -> str:
 
 
 def get_clusters(
-    t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]] = None
+    t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]] = None,
+    parent_map: dict[str, str] = PARENT_DICT,
 ) -> list[list[Tree | PhyloTree]]:
     """
     Extract maximal monophyletic clusters based on 'two_odd_id',
@@ -444,7 +446,7 @@ def get_clusters(
 
             elif same_parent_only(unique_ids):
                 # mixed but same parent → collapse to parent
-                node_id = get_root_id(next(iter(unique_ids)), PARENT_DICT)
+                node_id = get_root_id(next(iter(unique_ids)), parent_map)
 
             else:
                 node_id = None  # mixed families
@@ -495,7 +497,7 @@ def get_clusters(
                 # Thus, 2ODD14A is a nested clade and we need to resolve this cluster separately.
                 if (
                     leaf_2odd_id != node_id
-                    and get_root_id(leaf_2odd_id, PARENT_DICT) == node_id
+                    and get_root_id(leaf_2odd_id, parent_map) == node_id
                 ):
                     # the leaves under a 2ODD ID (e.g., 2ODD11) can contain multiple nested 2ODD IDs
                     # e.g. 2ODD11A and 2ODD11B
@@ -535,7 +537,7 @@ def get_clusters(
                     continue  # already assigned as part of another nested cluster, ignore
 
                 # spotted a nested cluster, e.g. 2ODD14A
-                elif get_root_id(subnode_id, PARENT_DICT) == node_id:
+                elif get_root_id(subnode_id, parent_map) == node_id:
                     # this is a nested cluster (e.g. 2ODD14A inside 2ODD14)
                     assigned_nested_nodes.update(list(subnode.traverse("preorder")))
 

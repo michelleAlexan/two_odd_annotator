@@ -32,6 +32,7 @@ from two_odd_annotator.services.annotate import (
     compute_cluster_neighbors,
     two_odd_id_to_cluster_indices, 
     seq_to_cluster_idx,
+    build_parent_map,
     cluster_meta_info,
     get_candidate_to_char_baits_df
 )
@@ -44,6 +45,7 @@ config["annotate"]["bait_sequence_collection"] = Path(__file__).parents[2] / "da
 
 major_minor_2ODDs_path = Path(__file__).parents[1] /"config" / "major_minor_2ODD_ids_manual.json"
 major_minor_2ODDs_dict = json.load(open(major_minor_2ODDs_path))
+parent_map = build_parent_map(list(major_minor_2ODDs_dict["major_2ODDs"].keys()))
 
 seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict=major_minor_2ODDs_dict)
 
@@ -1277,7 +1279,7 @@ def test_get_clusters_nested_without_candidates():
             t_nested['AF435417__H6H__scopolamine_biosynthesis__35625'],
         ]
     ]
-    result = get_clusters(t_nested)
+    result = get_clusters(t_nested, parent_map=parent_map)
     assert result == expected_clusters_nestd_without_candidates
 
 #%%
@@ -1474,7 +1476,7 @@ def test_get_clusters_nested_with_candidates():
         ]
     ]
 
-    result = get_clusters(t_nested, dist_dict=dist_dict_nested)
+    result = get_clusters(t_nested, dist_dict=dist_dict_nested, parent_map=parent_map)
     assert result == expected_clusters_nested_with_candidates
 
 

@@ -6,7 +6,7 @@
         "metabolic_pathways": [
             "vindoline_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "AF008597__D4H__vindoline_biosynthesis__4058"
         ]
     },
@@ -18,9 +18,9 @@
         "metabolic_pathways": [
             "glucosinolate_biosynthesis"
         ],
-        "char_2ODD_ids": [
-            "At2g25450__GSLOH__glucosinolate_biosynthesis__3702",
-            "BAW81934__GRS__glucosinolate_biosynthesis__3726"
+        "char_2ODDs": [
+            "BAW81934__GRS__glucosinolate_biosynthesis__3726",
+            "At2g25450__GSLOH__glucosinolate_biosynthesis__3702"
         ]
     },
     "2ODD03": {
@@ -30,116 +30,97 @@
         "metabolic_pathways": [
             "glucoside_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "NM_001111630__BX6__glucoside_biosynthesis__4577"
         ]
     },
     "2ODD04": {
         "functions": [],
         "metabolic_pathways": [],
-        "char_2ODD_ids": []
+        "char_2ODDs": []
     },
     "2ODD05": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD06": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD07": {
         "functions": [
             "TIIAS"
         ],
         "metabolic_pathways": [
             "tanshinone_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "MW916096__TIIAS__tanshinone_biosynthesis__226208"
         ]
     },
-    "2ODD08": {
+    "2ODD06": {
         "functions": [],
         "metabolic_pathways": [],
-        "char_2ODD_ids": []
+        "char_2ODDs": []
     },
-    "2ODD09": {
+    "2ODD07": {
         "functions": [
-            "C2H",
             "F6H",
-            "S8H"
+            "S8H",
+            "C2H"
         ],
         "metabolic_pathways": [
             "coumarin_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "At3g12900__S8H__coumarin_biosynthesis__3702",
-            "At1g55290__F6H__coumarin_biosynthesis__3702",
-            "At3g13610__F6H__coumarin_biosynthesis__3702",
             "AB636150__F6H__coumarin_biosynthesis__4120",
-            "BAL22346__F6H__coumarin_biosynthesis__4120",
-            "BAL22347__F6H__coumarin_biosynthesis__4120",
-            "BAL22348__F6H__coumarin_biosynthesis__4120",
-            "ADV77970__C2H__coumarin_biosynthesis__37565",
-            "ADV77968__C2H__coumarin_biosynthesis__37565",
-            "ADV77969__C2H__coumarin_biosynthesis__37565",
-            "AB636152__C2H__coumarin_biosynthesis__4120",
-            "JN245615__C2H__coumarin_biosynthesis__414735"
+            "At1g55290__F6H__coumarin_biosynthesis__3702",
+            "JN245615__C2H__coumarin_biosynthesis__414735",
+            "ADV77970__C2H__coumarin_biosynthesis__37565"
         ]
     },
-    "2ODD10": {
+    "2ODD08": {
         "functions": [
             "F3H",
             "M2H_weak"
         ],
         "metabolic_pathways": [
-            "flavonoid_pathway",
-            "melatonin_catabolism"
+            "melatonin_catabolism",
+            "flavonoid_pathway"
         ],
-        "char_2ODD_ids": [
-            "AB850638__F3H__flavonoid_pathway__1091135",
-            "AB850639__F3H__flavonoid_pathway__1091135",
-            "Os08g0480200__M2H_weak__melatonin_catabolism__4530"
+        "char_2ODDs": [
+            "Os08g0480200__M2H_weak__melatonin_catabolism__4530",
+            "AB850638__F3H__flavonoid_pathway__1091135"
         ]
     },
-    "2ODD11": {
+    "2ODD09": {
         "functions": [
-            "GIM",
             "M2H",
+            "GIM",
             "SLC"
         ],
         "metabolic_pathways": [
             "melatonin_catabolism",
             "salicylic_acid_metabolism"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "Os08g0560000__SLC__salicylic_acid_metabolism__4530",
-            "Os09g0570800__SLC__salicylic_acid_metabolism__4530",
             "AT2G36690__GIM__salicylic_acid_metabolism__3702",
             "Os04g0667400__M2H__melatonin_catabolism__4530"
         ]
     },
-    "2ODD12": {
+    "2ODD10": {
         "functions": [
             "F3H"
         ],
         "metabolic_pathways": [
             "flavonoid_pathway"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "AAM48133__F3H__flavonoid_pathway__137893"
         ]
     },
-    "2ODD12A": {
+    "2ODD10A": {
         "functions": [
             "H6H"
         ],
         "metabolic_pathways": [
             "scopolamine_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "AF435417__H6H__scopolamine_biosynthesis__35625",
             "EF187826__H6H__scopolamine_biosynthesis__402998",
             "AY356396.1__H6H__scopolamine_biosynthesis__243964",
@@ -148,59 +129,58 @@
             "M62719__H6H__scopolamine_biosynthesis__4079"
         ]
     },
-    "2ODD12B": {
+    "2ODD10B": {
         "functions": [
             "IDS"
         ],
         "metabolic_pathways": [
             "mugineic_acid_biosynthesis"
         ],
-        "char_2ODD_ids": [
-            "BAA03647.1__IDS__mugineic_acid_biosynthesis__4513",
-            "AB024058__IDS__mugineic_acid_biosynthesis__4513"
+        "char_2ODDs": [
+            "AB024058__IDS__mugineic_acid_biosynthesis__4513",
+            "BAA03647.1__IDS__mugineic_acid_biosynthesis__4513"
         ]
     },
-    "2ODD13": {
+    "2ODD11": {
         "functions": [
             "DMR6",
-            "F3H",
             "FNSI",
-            "S3H",
-            "S5H"
+            "S5H",
+            "F3H",
+            "S3H"
         ],
         "metabolic_pathways": [
             "flavonoid_pathway",
             "salicylic_acid_metabolism"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "At4g10500__S3H__salicylic_acid_metabolism__3702",
             "Os04g49210__S5H__salicylic_acid_metabolism__4530",
             "Ma04_p20880.1__DMR6__salicylic_acid_metabolism__4641",
             "AAL58118__F3H__flavonoid_pathway__4530",
-            "NM_197542__FNSI__flavonoid_pathway__4530",
             "Zm00001d029744__FNSI__flavonoid_pathway__4577",
-            "Zm00001d027423__FNSI__flavonoid_pathway__4577",
             "Os03g03034__S5H__salicylic_acid_metabolism__4530",
             "HORVU.MOREX.r3.4HG0412490__DMR6__salicylic_acid_metabolism__4513",
-            "Solyc03g080190__DMR6__salicylic_acid_metabolism__4081",
-            "At5g24530__DMR6__salicylic_acid_metabolism__3702"
+            "Zm00001d027423__FNSI__flavonoid_pathway__4577",
+            "At5g24530__DMR6__salicylic_acid_metabolism__3702",
+            "Solyc03g080190__DMR6__salicylic_acid_metabolism__4081"
         ]
     },
-    "2ODD14": {
+    "2ODD12": {
         "functions": [
             "FNSI"
         ],
         "metabolic_pathways": [
             "flavonoid_pathway"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "cibar1__FNSI__flavonoid_pathway__29588",
             "diant1__FNSI__flavonoid_pathway__3271",
             "plbif1__FNSI__flavonoid_pathway__187371",
             "ptvit1__FNSI__flavonoid_pathway__13821"
         ]
     },
-    "2ODD15": {
+    "2ODD13": {
         "functions": [
             "F3H",
             "FNSI"
@@ -208,236 +188,85 @@
         "metabolic_pathways": [
             "flavonoid_pathway"
         ],
-        "char_2ODD_ids": [
-            "KJ439220__FNSI__flavonoid_pathway__157224",
+        "char_2ODDs": [
             "OP378152__FNSI__flavonoid_pathway__3240",
-            "arann1__F3H__flavonoid_pathway__35608",
-            "AEG64806__F3H__flavonoid_pathway__4222",
-            "KY615689__F3H__flavonoid_pathway__4442",
-            "KP334104__F3H__flavonoid_pathway__69266",
-            "KJ636468__F3H__flavonoid_pathway__112883",
-            "MF445069__F3H__flavonoid_pathway__4097",
-            "AF022142__F3H__flavonoid_pathway__4102",
+            "KJ439220__FNSI__flavonoid_pathway__157224",
             "AY691918.1__F3H__flavonoid_pathway__3747",
             "LC852964__F3H__flavonoid_pathway__87532",
             "KY615688__F3H__flavonoid_pathway__4442",
-            "AY817679.1__F3H__flavonoid_pathway__40922",
-            "AY817678.1__F3H__flavonoid_pathway__48026",
+            "arann1__F3H__flavonoid_pathway__35608",
+            "AEG64806__F3H__flavonoid_pathway__4222",
+            "AY595420.1__F3H__flavonoid_pathway__3847",
+            "FJ529406.1__F3H__flavonoid_pathway__3880",
+            "XP_004509357__F3H__flavonoid_pathway__3827",
             "AY817674.1__F3H__flavonoid_pathway__271192",
+            "AY817678.1__F3H__flavonoid_pathway__48026",
             "AY230248.1__F3H__flavonoid_pathway__4043",
+            "AY817679.1__F3H__flavonoid_pathway__40922",
             "DQ683351.1__F3H__flavonoid_pathway__40954",
-            "PV023584__F3H__flavonoid_pathway__981085",
-            "ON055162__F3H__flavonoid_pathway__1453101",
-            "MZ343888__F3H__flavonoid_pathway__1006121",
-            "KF040970__F3H__flavonoid_pathway__103349",
             "OQ148590__F3H__flavonoid_pathway__85571",
             "OQ148591__F3H__flavonoid_pathway__2711",
             "OQ148589__F3H__flavonoid_pathway__55188",
             "At3g51240__F3H__flavonoid_pathway__3702",
-            "AAC49176__F3H__flavonoid_pathway__3702",
             "ABB91636__F3H__flavonoid_pathway__3708",
+            "MZ343888__F3H__flavonoid_pathway__1006121",
+            "KF040970__F3H__flavonoid_pathway__103349",
+            "PV023584__F3H__flavonoid_pathway__981085",
+            "ON055162__F3H__flavonoid_pathway__1453101",
+            "KP334104__F3H__flavonoid_pathway__69266",
+            "KY615689__F3H__flavonoid_pathway__4442",
+            "KJ636468__F3H__flavonoid_pathway__112883",
+            "MF445069__F3H__flavonoid_pathway__4097",
+            "AF022142__F3H__flavonoid_pathway__4102",
             "KF020698__F3H__flavonoid_pathway__296036",
             "KX817991__F3H__flavonoid_pathway__142615",
-            "AY742228.1__F3H__flavonoid_pathway__3311",
-            "AAU93347__F3H__flavonoid_pathway__3311",
             "MK256609__F3H__flavonoid_pathway__3329",
-            "AY595420.1__F3H__flavonoid_pathway__3847",
-            "FJ529406.1__F3H__flavonoid_pathway__3880",
-            "FJ529406__F3H__flavonoid_pathway__3880",
-            "XP_004509357__F3H__flavonoid_pathway__3827"
+            "AY742228.1__F3H__flavonoid_pathway__3311"
         ]
     },
-    "2ODD15A": {
+    "2ODD13A": {
         "functions": [
             "FNSI"
         ],
         "metabolic_pathways": [
             "flavonoid_pathway"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "DQ683349.1__FNSI__flavonoid_pathway__52462",
             "AY817675.1__FNSI__flavonoid_pathway__4039",
-            "AY817677.1__FNSI__flavonoid_pathway__13447",
             "DQ683350.1__FNSI__flavonoid_pathway__40954",
             "DQ683352__FNSI__flavonoid_pathway__40949",
-            "AY817676.1__FNSI__flavonoid_pathway__4045",
-            "AAP57393.1__FNSI__flavonoid_pathway__4043"
+            "AY817677.1__FNSI__flavonoid_pathway__13447",
+            "AAP57393.1__FNSI__flavonoid_pathway__4043",
+            "AY817676.1__FNSI__flavonoid_pathway__4045"
         ]
     },
-    "2ODD16": {
+    "2ODD14": {
         "functions": [
             "JOX"
         ],
         "metabolic_pathways": [
             "jasmonic_acid_catabolism"
         ],
-        "char_2ODD_ids": [
-            "At3g11180__JOX__jasmonic_acid_catabolism__3702",
-            "At5g05600__JOX__jasmonic_acid_catabolism__3702",
-            "At3g55970__JOX__jasmonic_acid_catabolism__3702",
-            "XP_019260105__JOX__jasmonic_acid_catabolism__49451",
-            "XP_019239637__JOX__jasmonic_acid_catabolism__49451",
-            "XP_019255462__JOX__jasmonic_acid_catabolism__49451",
-            "XP_019239636__JOX__jasmonic_acid_catabolism__49451",
+        "char_2ODDs": [
             "At2g38240__JOX__jasmonic_acid_catabolism__3702",
+            "XP_019239636__JOX__jasmonic_acid_catabolism__49451",
+            "At3g11180__JOX__jasmonic_acid_catabolism__3702",
+            "XP_019260105__JOX__jasmonic_acid_catabolism__49451",
             "Os01g0832600__JOX__jasmonic_acid_catabolism__4530",
-            "Os03g0289800__JOX__jasmonic_acid_catabolism__4530",
-            "Os05g0127500__JOX__jasmonic_acid_catabolism__4530",
-            "Zm00001d042980__JOX__jasmonic_acid_catabolism__4577"
+            "Zm00001d042980__JOX__jasmonic_acid_catabolism__4577",
+            "Os05g0127500__JOX__jasmonic_acid_catabolism__4530"
         ]
     },
-    "2ODD17": {
-        "functions": [
-            "ANS"
-        ],
-        "metabolic_pathways": [
-            "flavonoid_pathway"
-        ],
-        "char_2ODD_ids": [
-            "ACC66092.1__ANS__flavonoid_pathway__3311",
-            "At4g22880__ANS__flavonoid_pathway__3702",
-            "AB198870.1__ANS__flavonoid_pathway__3527",
-            "AB198869.1__ANS__flavonoid_pathway__3562",
-            "AY695817.1__ANS__flavonoid_pathway__3747",
-            "AGV53047.1__ANS__flavonoid_pathway__1590841",
-            "MF445065__ANS__flavonoid_pathway__4097",
-            "AB003779__ANS__flavonoid_pathway__48386",
-            "EF192598.1__ANS__flavonoid_pathway__4679",
-            "Y07955.1__ANS__flavonoid_pathway__4530",
-            "Os01g0372500__ANS__flavonoid_pathway__4530",
-            "X55314.1__ANS__flavonoid_pathway__4577"
-        ]
-    },
-    "2ODD18": {
-        "functions": [
-            "DAH",
-            "FLS"
-        ],
-        "metabolic_pathways": [
-            "acutumine_biosynthesis",
-            "flavonoid_pathway"
-        ],
-        "char_2ODD_ids": [
-            "ACY00393.1__FLS__flavonoid_pathway__3311",
-            "KY615705__FLS__flavonoid_pathway__4442",
-            "KY615707__FLS__flavonoid_pathway__4442",
-            "orsat1__FLS__flavonoid_pathway__4530",
-            "orsat2__FLS__flavonoid_pathway__4530",
-            "MH748569__FLS__flavonoid_pathway__82047",
-            "MH748570__FLS__flavonoid_pathway__82047",
-            "MH636605__FLS__flavonoid_pathway__928064",
-            "AB011796__FLS__flavonoid_pathway__55188",
-            "PV023583__FLS__flavonoid_pathway__981085",
-            "KY615706__FLS__flavonoid_pathway__4442",
-            "AY230249.1__FLS__flavonoid_pathway__4043",
-            "ipbat1__FLS__flavonoid_pathway__4120",
-            "Z22543.1__FLS__flavonoid_pathway__4102",
-            "CAA80264__FLS__flavonoid_pathway__4102",
-            "AB078512.1__FLS__flavonoid_pathway__184877",
-            "MF445061__FLS__flavonoid_pathway__4097",
-            "AF240764__FLS__flavonoid_pathway__52518",
-            "scubai1__FLS__flavonoid_pathway__65409",
-            "scubai2__FLS__flavonoid_pathway__65409",
-            "DQ087252.1__FLS__flavonoid_pathway__3747",
-            "AAD26261__FLS__flavonoid_pathway__3750",
-            "AB246668__FLS__flavonoid_pathway__3847",
-            "XP_004513519__FLS__flavonoid_pathway__3827",
-            "scubai3__FLS__flavonoid_pathway__65409",
-            "MT040709__DAH__acutumine_biosynthesis__49681",
-            "At5g08640__FLS__flavonoid_pathway__3702",
-            "At5g63600__FLS__flavonoid_pathway__3702",
-            "At5g63590__FLS__flavonoid_pathway__3702"
-        ]
-    },
-    "2ODD19": {
-        "functions": [
-            "COD",
-            "M2H_weak",
-            "NCS",
-            "SRG",
-            "T6OD"
-        ],
-        "metabolic_pathways": [
-            "benzylisoquinoline_biosynthesis",
-            "melatonin_catabolism",
-            "senescence_related"
-        ],
-        "char_2ODD_ids": [
-            "AKC91841__SRG__senescence_related__13419",
-            "GQ500139__T6OD__benzylisoquinoline_biosynthesis__3469",
-            "GQ500141__COD__benzylisoquinoline_biosynthesis__3469",
-            "AB267398__NCS__benzylisoquinoline_biosynthesis__3442",
-            "Os10g0558700__M2H_weak__melatonin_catabolism__4530"
-        ]
-    },
-    "2ODD20": {
-        "functions": [
-            "LBO"
-        ],
-        "metabolic_pathways": [
-            "strigolactone_biosynthesis"
-        ],
-        "char_2ODD_ids": [
-            "AAO64923__LBO__strigolactone_biosynthesis__3702"
-        ]
-    },
-    "2ODD21": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD22": {
-        "functions": [
-            "GA7ox"
-        ],
-        "metabolic_pathways": [
-            "gibberellin_metabolism"
-        ],
-        "char_2ODD_ids": [
-            "HE582623__GA7ox__gibberellin_metabolism__3659",
-            "HE582622__GA7ox__gibberellin_metabolism__3659",
-            "AAB64346__GA7ox__gibberellin_metabolism__3661"
-        ]
-    },
-    "2ODD23": {
-        "functions": [
-            "2ODDC23"
-        ],
-        "metabolic_pathways": [
-            "guanidine_production"
-        ],
-        "char_2ODD_ids": [
-            "Os09g0245500__2ODDC23__guanidine_production__4530",
-            "At3g50210__2ODDC23__guanidine_production__3702",
-            "At3g49620__2ODDC23__guanidine_production__3702",
-            "At3g49630__2ODDC23__guanidine_production__3702",
-            "KRH04547.1__2ODDC23__guanidine_production__3847"
-        ]
-    },
-    "2ODD24": {
-        "functions": [
-            "2OG1",
-            "LFS"
-        ],
-        "metabolic_pathways": [
-            "styrylchromone_biosynthesis",
-            "triterpene_biosynthesis"
-        ],
-        "char_2ODD_ids": [
-            "PQ152161__2OG1__styrylchromone_biosynthesis__210372",
-            "OQ091246__LFS__triterpene_biosynthesis__2711"
-        ]
-    },
-    "2ODD25": {
+    "2ODD15": {
         "functions": [
             "ACCO"
         ],
         "metabolic_pathways": [
             "ethylene_biosynthesis"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "At1g77330__ACCO__ethylene_biosynthesis__3702",
-            "At1g62380__ACCO__ethylene_biosynthesis__3702",
             "At1g12010__ACCO__ethylene_biosynthesis__3702",
             "CAA43662.1__ACCO__ethylene_biosynthesis__3750",
             "At1g05010__ACCO__ethylene_biosynthesis__3702",
@@ -446,138 +275,157 @@
             "At2g19590__ACCO__ethylene_biosynthesis__3702"
         ]
     },
-    "2ODD26": {
+    "2ODD16": {
         "functions": [],
         "metabolic_pathways": [],
-        "char_2ODD_ids": []
+        "char_2ODDs": []
     },
-    "2ODD27": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD28": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD29": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD30": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD31": {
+    "2ODD17": {
         "functions": [
-            "C20_GA2ox"
+            "LBO"
+        ],
+        "metabolic_pathways": [
+            "strigolactone_biosynthesis"
+        ],
+        "char_2ODDs": [
+            "AAO64923__LBO__strigolactone_biosynthesis__3702"
+        ]
+    },
+    "2ODD18": {
+        "functions": [
+            "NCS",
+            "M2H_weak"
+        ],
+        "metabolic_pathways": [
+            "benzylisoquinoline_biosynthesis",
+            "melatonin_catabolism"
+        ],
+        "char_2ODDs": [
+            "AB267398__NCS__benzylisoquinoline_biosynthesis__3442",
+            "Os10g0558700__M2H_weak__melatonin_catabolism__4530"
+        ]
+    },
+    "2ODD19": {
+        "functions": [
+            "SRG",
+            "T6OD"
+        ],
+        "metabolic_pathways": [
+            "benzylisoquinoline_biosynthesis",
+            "senescence_related"
+        ],
+        "char_2ODDs": [
+            "AKC91841__SRG__senescence_related__13419",
+            "GQ500139__T6OD__benzylisoquinoline_biosynthesis__3469"
+        ]
+    },
+    "2ODD20": {
+        "functions": [
+            "ANS",
+            "FLS"
+        ],
+        "metabolic_pathways": [
+            "flavonoid_pathway"
+        ],
+        "char_2ODDs": [
+            "ACY00393.1__FLS__flavonoid_pathway__3311",
+            "ACC66092.1__ANS__flavonoid_pathway__3311",
+            "At4g22880__ANS__flavonoid_pathway__3702",
+            "AB198869.1__ANS__flavonoid_pathway__3562",
+            "AB198870.1__ANS__flavonoid_pathway__3527",
+            "AY695817.1__ANS__flavonoid_pathway__3747",
+            "AGV53047.1__ANS__flavonoid_pathway__1590841",
+            "AB003779__ANS__flavonoid_pathway__48386",
+            "MF445065__ANS__flavonoid_pathway__4097",
+            "EF192598.1__ANS__flavonoid_pathway__4679",
+            "X55314.1__ANS__flavonoid_pathway__4577",
+            "Y07955.1__ANS__flavonoid_pathway__4530"
+        ]
+    },
+    "2ODD21": {
+        "functions": [
+            "DAH",
+            "FLS"
+        ],
+        "metabolic_pathways": [
+            "acutumine_biosynthesis",
+            "flavonoid_pathway"
+        ],
+        "char_2ODDs": [
+            "KY615705__FLS__flavonoid_pathway__4442",
+            "orsat1__FLS__flavonoid_pathway__4530",
+            "MH748569__FLS__flavonoid_pathway__82047",
+            "MH636605__FLS__flavonoid_pathway__928064",
+            "PV023583__FLS__flavonoid_pathway__981085",
+            "AB011796__FLS__flavonoid_pathway__55188",
+            "KY615706__FLS__flavonoid_pathway__4442",
+            "AY230249.1__FLS__flavonoid_pathway__4043",
+            "ipbat1__FLS__flavonoid_pathway__4120",
+            "AF240764__FLS__flavonoid_pathway__52518",
+            "MF445061__FLS__flavonoid_pathway__4097",
+            "Z22543.1__FLS__flavonoid_pathway__4102",
+            "AB078512.1__FLS__flavonoid_pathway__184877",
+            "scubai1__FLS__flavonoid_pathway__65409",
+            "DQ087252.1__FLS__flavonoid_pathway__3747",
+            "AAD26261__FLS__flavonoid_pathway__3750",
+            "AB246668__FLS__flavonoid_pathway__3847",
+            "XP_004513519__FLS__flavonoid_pathway__3827",
+            "scubai3__FLS__flavonoid_pathway__65409",
+            "MT040709__DAH__acutumine_biosynthesis__49681",
+            "At5g08640__FLS__flavonoid_pathway__3702"
+        ]
+    },
+    "2ODD22": {
+        "functions": [
+            "GA13ox",
+            "GA3ox"
         ],
         "metabolic_pathways": [
             "gibberellin_metabolism"
         ],
-        "char_2ODD_ids": [
-            "pavir2__C20_GA2ox__gibberellin_metabolism__38727",
-            "Os04g0522500__C20_GA2ox__gibberellin_metabolism__4530",
-            "HORVU.MOREX.r3.2HG0182470__C20_GA2ox__gibberellin_metabolism__4513",
-            "ONI32001.1__C20_GA2ox__gibberellin_metabolism__3760",
-            "Os07g0103500__C20_GA2ox__gibberellin_metabolism__4530",
-            "pavir1__C20_GA2ox__gibberellin_metabolism__38727",
-            "KC898185__C20_GA2ox__gibberellin_metabolism__29760",
-            "AY935713__C20_GA2ox__gibberellin_metabolism__3562",
-            "KC898184__C20_GA2ox__gibberellin_metabolism__29760",
-            "At4g21200__C20_GA2ox__gibberellin_metabolism__3702",
-            "HE983622__C20_GA2ox__gibberellin_metabolism__3659",
-            "At1g50960__C20_GA2ox__gibberellin_metabolism__3702"
+        "char_2ODDs": [
+            "ABX10776.1__GA3ox__gibberellin_metabolism__88036",
+            "Os05g0178100__GA3ox__gibberellin_metabolism__4530",
+            "Os01g0177400__GA3ox__gibberellin_metabolism__4530",
+            "AY551431__GA3ox__gibberellin_metabolism__4513",
+            "DQ118250__GA3ox__gibberellin_metabolism__4565",
+            "AY551430__GA3ox__gibberellin_metabolism__4513",
+            "AB012205__GA3ox__gibberellin_metabolism__4236",
+            "FJ792643__GA3ox__gibberellin_metabolism__4113",
+            "KC898176__GA3ox__gibberellin_metabolism__29760",
+            "AF001219__GA3ox__gibberellin_metabolism__3888",
+            "AY433958__GA3ox__gibberellin_metabolism__47664",
+            "At1g80330__GA3ox__gibberellin_metabolism__3702",
+            "Pbr036063.1__GA3ox__gibberellin_metabolism__225117",
+            "FJ571520__GA3ox__gibberellin_metabolism__3750",
+            "AJ006453__GA3ox__gibberellin_metabolism__3661",
+            "FR720085__GA3ox__gibberellin_metabolism__3659",
+            "HQ026484__GA3ox__gibberellin_metabolism__48242",
+            "HE582628__GA3ox__gibberellin_metabolism__3659",
+            "At4g21690__GA3ox__gibberellin_metabolism__3702",
+            "MN105735__GA13ox__gibberellin_metabolism__458696",
+            "KC898175__GA3ox__gibberellin_metabolism__29760",
+            "HQ026485__GA3ox__gibberellin_metabolism__48242",
+            "HE582627__GA3ox__gibberellin_metabolism__3659",
+            "HQ026483__GA3ox__gibberellin_metabolism__48242",
+            "HE680066__GA3ox__gibberellin_metabolism__3659",
+            "U63650__GA3ox__gibberellin_metabolism__3661"
         ]
     },
-    "2ODD32": {
-        "functions": [
-            "DAO"
-        ],
-        "metabolic_pathways": [
-            "auxin_catabolism"
-        ],
-        "char_2ODD_ids": [
-            "NP_001053075.1__DAO__auxin_catabolism__4530",
-            "At1g14130__DAO__auxin_catabolism__3702",
-            "At1g14120__DAO__auxin_catabolism__3702"
-        ]
-    },
-    "2ODD33": {
-        "functions": [
-            "T2OGD"
-        ],
-        "metabolic_pathways": [
-            "taxol_biosynthesis"
-        ],
-        "char_2ODD_ids": [
-            "PQ015324__T2OGD__taxol_biosynthesis__29808"
-        ]
-    },
-    "2ODD34": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD35": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD36": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD37": {
-        "functions": [],
-        "metabolic_pathways": [],
-        "char_2ODD_ids": []
-    },
-    "2ODD38": {
-        "functions": [
-            "AOP2",
-            "AOP3",
-            "DPS"
-        ],
-        "metabolic_pathways": [
-            "etoposide_biosynthesis",
-            "glucosinolate_biosynthesis"
-        ],
-        "char_2ODD_ids": [
-            "KT390173__DPS__etoposide_biosynthesis__93608",
-            "AF417858__AOP2__glucosinolate_biosynthesis__3702",
-            "AF417859__AOP3__glucosinolate_biosynthesis__3702"
-        ]
-    },
-    "2ODD39": {
+    "2ODD23": {
         "functions": [
             "GA20ox"
         ],
         "metabolic_pathways": [
             "gibberellin_metabolism"
         ],
-        "char_2ODD_ids": [
+        "char_2ODDs": [
             "ABX10768.1__GA20ox__gibberellin_metabolism__88036",
             "OR651279__GA20ox__gibberellin_metabolism__88732",
             "KC461180__GA20ox__gibberellin_metabolism__77912",
-            "At1g44090__GA20ox__gibberellin_metabolism__3702",
-            "At5g51810__GA20ox__gibberellin_metabolism__3702",
-            "At5g07200__GA20ox__gibberellin_metabolism__3702",
-            "At1g60980__GA20ox__gibberellin_metabolism__3702",
-            "Os01g0883800__GA20ox__gibberellin_metabolism__4530",
-            "HE680065__GA20ox__gibberellin_metabolism__3659",
-            "KC898186__GA20ox__gibberellin_metabolism__29760",
-            "AY594290__GA20ox__gibberellin_metabolism__63479",
-            "HE582624__GA20ox__gibberellin_metabolism__3659",
             "AAG43043__GA20ox__gibberellin_metabolism__4522",
             "AY551428__GA20ox__gibberellin_metabolism__4513",
             "Y14008__GA20ox__gibberellin_metabolism__4565",
-            "Y14009__GA20ox__gibberellin_metabolism__4565",
-            "Y14007__GA20ox__gibberellin_metabolism__4565",
             "Os03g0856700__GA20ox__gibberellin_metabolism__4530",
             "DQ645453__GA20ox__gibberellin_metabolism__309978",
             "AY551429__GA20ox__gibberellin_metabolism__4513",
@@ -589,107 +437,61 @@
             "FJ623272__GA20ox__gibberellin_metabolism__3635",
             "U70532__GA20ox__gibberellin_metabolism__3885",
             "HE582625__GA20ox__gibberellin_metabolism__3659",
-            "AY594289__GA20ox__gibberellin_metabolism__63479",
+            "AB012203__GA20ox__gibberellin_metabolism__4236",
             "JF427572__GA20ox__gibberellin_metabolism__4072",
             "AJ291453__GA20ox__gibberellin_metabolism__4113",
-            "AB012203__GA20ox__gibberellin_metabolism__4236",
-            "AB012204__GA20ox__gibberellin_metabolism__4236",
+            "AY594289__GA20ox__gibberellin_metabolism__63479",
+            "FR720083__GA20ox__gibberellin_metabolism__3659",
             "KC898189__GA20ox__gibberellin_metabolism__29760",
             "AB037114__GA20ox__gibberellin_metabolism__3750",
             "KP979705__GA20ox__gibberellin_metabolism__194251",
-            "KP979706__GA20ox__gibberellin_metabolism__194251",
             "LC056054__GA20ox__gibberellin_metabolism__55188",
             "U70530__GA20ox__gibberellin_metabolism__3885",
             "U70471__GA20ox__gibberellin_metabolism__3888",
             "ON229923__GA20ox__gibberellin_metabolism__49839",
             "U70531__GA20ox__gibberellin_metabolism__3885",
             "Medtr1g102070__GA20ox__gibberellin_metabolism__3880",
-            "FR720083__GA20ox__gibberellin_metabolism__3659",
             "AF074709__GA20ox__gibberellin_metabolism__3654",
             "HE582626__GA20ox__gibberellin_metabolism__3659",
-            "AAB64345__GA20ox__gibberellin_metabolism__3661"
+            "AAB64345__GA20ox__gibberellin_metabolism__3661",
+            "Os01g0883800__GA20ox__gibberellin_metabolism__4530",
+            "At1g44090__GA20ox__gibberellin_metabolism__3702",
+            "HE680065__GA20ox__gibberellin_metabolism__3659",
+            "AY594290__GA20ox__gibberellin_metabolism__63479",
+            "KC898186__GA20ox__gibberellin_metabolism__29760",
+            "HE582624__GA20ox__gibberellin_metabolism__3659"
         ]
     },
-    "2ODD40": {
-        "functions": [
-            "GA13ox",
-            "GA3ox"
-        ],
-        "metabolic_pathways": [
-            "gibberellin_metabolism"
-        ],
-        "char_2ODD_ids": [
-            "ABX10776.1__GA3ox__gibberellin_metabolism__88036",
-            "Os05g0178100__GA3ox__gibberellin_metabolism__4530",
-            "Os01g0177400__GA3ox__gibberellin_metabolism__4530",
-            "AY551431__GA3ox__gibberellin_metabolism__4513",
-            "DQ118250__GA3ox__gibberellin_metabolism__4565",
-            "DQ118251__GA3ox__gibberellin_metabolism__4565",
-            "DQ118252__GA3ox__gibberellin_metabolism__4565",
-            "AY551430__GA3ox__gibberellin_metabolism__4513",
-            "At1g80330__GA3ox__gibberellin_metabolism__3702",
-            "At1g15550__GA3ox__gibberellin_metabolism__3702",
-            "At1g80340__GA3ox__gibberellin_metabolism__3702",
-            "AB012205__GA3ox__gibberellin_metabolism__4236",
-            "AB012206__GA3ox__gibberellin_metabolism__4236",
-            "FJ792643__GA3ox__gibberellin_metabolism__4113",
-            "KC898176__GA3ox__gibberellin_metabolism__29760",
-            "KC898177__GA3ox__gibberellin_metabolism__29760",
-            "Pbr036063.1__GA3ox__gibberellin_metabolism__225117",
-            "FJ571520__GA3ox__gibberellin_metabolism__3750",
-            "AY433958__GA3ox__gibberellin_metabolism__47664",
-            "AF001219__GA3ox__gibberellin_metabolism__3888",
-            "HQ026484__GA3ox__gibberellin_metabolism__48242",
-            "FR720085__GA3ox__gibberellin_metabolism__3659",
-            "AJ006453__GA3ox__gibberellin_metabolism__3661",
-            "HE582628__GA3ox__gibberellin_metabolism__3659",
-            "At4g21690__GA3ox__gibberellin_metabolism__3702",
-            "MN105735__GA13ox__gibberellin_metabolism__458696",
-            "KC898175__GA3ox__gibberellin_metabolism__29760",
-            "HQ026485__GA3ox__gibberellin_metabolism__48242",
-            "HE582627__GA3ox__gibberellin_metabolism__3659",
-            "U63650__GA3ox__gibberellin_metabolism__3661",
-            "HE680066__GA3ox__gibberellin_metabolism__3659",
-            "HQ026483__GA3ox__gibberellin_metabolism__48242"
-        ]
-    },
-    "2ODD41": {
+    "2ODD24": {
         "functions": [
             "C19_GA2ox"
         ],
         "metabolic_pathways": [
             "gibberellin_metabolism"
         ],
-        "char_2ODD_ids": [
-            "HE582631__C19_GA2ox__gibberellin_metabolism__3659",
-            "HE680067__C19_GA2ox__gibberellin_metabolism__3659",
-            "JQ994299__C19_GA2ox__gibberellin_metabolism__4565",
-            "JQ994300__C19_GA2ox__gibberellin_metabolism__4565",
-            "JQ994301__C19_GA2ox__gibberellin_metabolism__4565",
-            "JQ994303__C19_GA2ox__gibberellin_metabolism__4565",
-            "JQ994304__C19_GA2ox__gibberellin_metabolism__4565",
-            "CAB41036__C19_GA2ox__gibberellin_metabolism__3886",
-            "ONI10990.1__C19_GA2ox__gibberellin_metabolism__3760",
-            "At1g30040__C19_GA2ox__gibberellin_metabolism__3702",
-            "At2g34555__C19_GA2ox__gibberellin_metabolism__3702",
-            "KC898180__C19_GA2ox__gibberellin_metabolism__29760",
-            "AY588978__C19_GA2ox__gibberellin_metabolism__63479",
-            "EU003995__C19_GA2ox__gibberellin_metabolism__4113",
-            "At1g78440__C19_GA2ox__gibberellin_metabolism__3702",
+        "char_2ODDs": [
             "KC898179__C19_GA2ox__gibberellin_metabolism__29760",
-            "KC898181__C19_GA2ox__gibberellin_metabolism__29760",
-            "AJ302041__C19_GA2ox__gibberellin_metabolism__3661",
             "HE582629__C19_GA2ox__gibberellin_metabolism__3659",
-            "FJ571521__C19_GA2ox__gibberellin_metabolism__3750",
+            "AJ302041__C19_GA2ox__gibberellin_metabolism__3661",
+            "KC898181__C19_GA2ox__gibberellin_metabolism__29760",
             "Pbr025274.1__C19_GA2ox__gibberellin_metabolism__225117",
+            "FJ571521__C19_GA2ox__gibberellin_metabolism__3750",
             "AF056935__C19_GA2ox__gibberellin_metabolism__3888",
             "AY594292__C19_GA2ox__gibberellin_metabolism__63479",
             "GU059939__C19_GA2ox__gibberellin_metabolism__4102",
+            "KC898180__C19_GA2ox__gibberellin_metabolism__29760",
+            "AY588978__C19_GA2ox__gibberellin_metabolism__63479",
+            "EU003995__C19_GA2ox__gibberellin_metabolism__4113",
+            "HE582631__C19_GA2ox__gibberellin_metabolism__3659",
+            "ONI10990.1__C19_GA2ox__gibberellin_metabolism__3760",
+            "CAB41036__C19_GA2ox__gibberellin_metabolism__3886",
+            "At1g78440__C19_GA2ox__gibberellin_metabolism__3702",
+            "At1g30040__C19_GA2ox__gibberellin_metabolism__3702",
             "AY551433__C19_GA2ox__gibberellin_metabolism__4513",
-            "Os01g0757200__C19_GA2ox__gibberellin_metabolism__4530",
+            "AY551432__C19_GA2ox__gibberellin_metabolism__4513",
             "JQ994302__C19_GA2ox__gibberellin_metabolism__4565",
             "HORVU.MOREX.r2.3HG0240680__C19_GA2ox__gibberellin_metabolism__4513",
-            "AY551432__C19_GA2ox__gibberellin_metabolism__4513",
+            "Os01g0757200__C19_GA2ox__gibberellin_metabolism__4530",
             "HORVU.MOREX.r2.1HG0019640__C19_GA2ox__gibberellin_metabolism__4513",
             "Os05g0158600__C19_GA2ox__gibberellin_metabolism__4530",
             "At1g47990__C19_GA2ox__gibberellin_metabolism__3702",
@@ -697,9 +499,148 @@
             "ONI27933.1__C19_GA2ox__gibberellin_metabolism__3760",
             "AY594291__C19_GA2ox__gibberellin_metabolism__63479",
             "At1g02400__C19_GA2ox__gibberellin_metabolism__3702",
+            "HE582630__C19_GA2ox__gibberellin_metabolism__3659",
             "KC898183__C19_GA2ox__gibberellin_metabolism__29760",
-            "AF100954__C19_GA2ox__gibberellin_metabolism__3888",
-            "HE582630__C19_GA2ox__gibberellin_metabolism__3659"
+            "AF100954__C19_GA2ox__gibberellin_metabolism__3888"
+        ]
+    },
+    "2ODD25": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD26": {
+        "functions": [
+            "T2OGD"
+        ],
+        "metabolic_pathways": [
+            "taxol_biosynthesis"
+        ],
+        "char_2ODDs": [
+            "PQ015324__T2OGD__taxol_biosynthesis__29808"
+        ]
+    },
+    "2ODD27": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD28": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD29": {
+        "functions": [
+            "C20_GA2ox"
+        ],
+        "metabolic_pathways": [
+            "gibberellin_metabolism"
+        ],
+        "char_2ODDs": [
+            "pavir2__C20_GA2ox__gibberellin_metabolism__38727",
+            "Os04g0522500__C20_GA2ox__gibberellin_metabolism__4530",
+            "HORVU.MOREX.r3.2HG0182470__C20_GA2ox__gibberellin_metabolism__4513",
+            "ONI32001.1__C20_GA2ox__gibberellin_metabolism__3760",
+            "Os07g0103500__C20_GA2ox__gibberellin_metabolism__4530",
+            "pavir1__C20_GA2ox__gibberellin_metabolism__38727",
+            "AY935713__C20_GA2ox__gibberellin_metabolism__3562",
+            "At4g21200__C20_GA2ox__gibberellin_metabolism__3702",
+            "HE983622__C20_GA2ox__gibberellin_metabolism__3659",
+            "KC898184__C20_GA2ox__gibberellin_metabolism__29760",
+            "KC898185__C20_GA2ox__gibberellin_metabolism__29760",
+            "At1g50960__C20_GA2ox__gibberellin_metabolism__3702"
+        ]
+    },
+    "2ODD30": {
+        "functions": [
+            "DAO"
+        ],
+        "metabolic_pathways": [
+            "auxin_catabolism"
+        ],
+        "char_2ODDs": [
+            "At1g14130__DAO__auxin_catabolism__3702",
+            "NP_001053075.1__DAO__auxin_catabolism__4530"
+        ]
+    },
+    "2ODD31": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD32": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD33": {
+        "functions": [
+            "AOP2",
+            "AOP3"
+        ],
+        "metabolic_pathways": [
+            "glucosinolate_biosynthesis"
+        ],
+        "char_2ODDs": [
+            "AF417859__AOP3__glucosinolate_biosynthesis__3702",
+            "AF417858__AOP2__glucosinolate_biosynthesis__3702"
+        ]
+    },
+    "2ODD34": {
+        "functions": [
+            "DPS"
+        ],
+        "metabolic_pathways": [
+            "etoposide_biosynthesis"
+        ],
+        "char_2ODDs": [
+            "KT390173__DPS__etoposide_biosynthesis__93608"
+        ]
+    },
+    "2ODD35": {
+        "functions": [
+            "GA7ox"
+        ],
+        "metabolic_pathways": [
+            "gibberellin_metabolism"
+        ],
+        "char_2ODDs": [
+            "HE582623__GA7ox__gibberellin_metabolism__3659",
+            "HE582622__GA7ox__gibberellin_metabolism__3659",
+            "AAB64346__GA7ox__gibberellin_metabolism__3661"
+        ]
+    },
+    "2ODD36": {
+        "functions": [],
+        "metabolic_pathways": [],
+        "char_2ODDs": []
+    },
+    "2ODD37": {
+        "functions": [
+            "2ODDC23"
+        ],
+        "metabolic_pathways": [
+            "guanidine_production"
+        ],
+        "char_2ODDs": [
+            "Os09g0245500__2ODDC23__guanidine_production__4530",
+            "At3g50210__2ODDC23__guanidine_production__3702",
+            "KRH04547.1__2ODDC23__guanidine_production__3847"
+        ]
+    },
+    "2ODD38": {
+        "functions": [
+            "LFS",
+            "2OG1"
+        ],
+        "metabolic_pathways": [
+            "triterpene_biosynthesis",
+            "styrylchromone_biosynthesis"
+        ],
+        "char_2ODDs": [
+            "PQ152161__2OG1__styrylchromone_biosynthesis__210372",
+            "OQ091246__LFS__triterpene_biosynthesis__2711"
         ]
     }
 }
