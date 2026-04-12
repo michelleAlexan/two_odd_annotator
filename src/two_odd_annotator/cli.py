@@ -83,12 +83,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Give immediate feedback so users see that the CLI has started
-    # even if downstream imports/initialisation (e.g. taxonomy DB) take a while.
-    print(
-        "Starting annodd pipeline – initialisation may take a moment (loading configuration and taxonomy database)...",
-        flush=True,
-    )
 
     # Initialize pipeline
     pipeline = Runner(

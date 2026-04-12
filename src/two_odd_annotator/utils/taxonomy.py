@@ -5,7 +5,17 @@ from typing import Dict
 from ete4.ncbi_taxonomy import NCBITaxa
 
 
-_ncbi = NCBITaxa()
+# Lazily initialise NCBITaxa so that importing this module is
+# fast and heavy taxonomy database setup only happens when the
+# mapping function is first used during a pipeline run.
+_ncbi: NCBITaxa | None = None
+
+
+def _get_ncbi() -> NCBITaxa:
+    global _ncbi
+    if _ncbi is None:
+        _ncbi = NCBITaxa()
+    return _ncbi
 
 # Handle a few known spelling/spacing variants that do not resolve
 # cleanly via the NCBI name translator.
@@ -39,7 +49,7 @@ def map_scientific_notation_to_tax_id(
     name = _ALIASES.get(name, name)
 
     try:
-        name_to_ids = _ncbi.get_name_translator([name])
+        name_to_ids = _get_ncbi().get_name_translator([name])
     except Exception as exc:  # pragma: no cover - defensive
         if raise_on_error:
             raise ValueError(
