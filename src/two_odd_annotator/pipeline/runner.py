@@ -226,7 +226,6 @@ class Runner:
                     log_line(self.log_path, "Running visualization service.")
                     vizualize.run(self.state.output_base_dir, self.config)
                 else:
-                    print("Visualization step is not implemented yet.")
                     log_line(
                         self.log_path, "Visualization step is not implemented yet."
                     )
@@ -238,9 +237,6 @@ class Runner:
         if self.step in ("all", "annotate") and self.config["pipeline"].get(
             "delete_intermediate_files"
         ):
-            print(
-                f"Deleting intermediate annotation files: {ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE}..."
-            )
             log_line(
                 self.log_path,
                 f"Deleting intermediate annotation files: {ANNOTATION_FASTA, ANNOTATION_MSA, ANNOTATION_MSA_TRIM, ANNOTATION_TREE}...",
@@ -256,5 +252,4 @@ class Runner:
                 ]:
                     file.unlink()
 
-        print(f"Pipeline completed in {elapsed:.2f} minutes.")
         log_line(self.log_path, f"Pipeline completed in {elapsed:.2f} minutes.")

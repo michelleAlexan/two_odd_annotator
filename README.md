@@ -18,6 +18,9 @@ The `two_odd_annotator` is a Python bioinformatics tool that lets you find putat
 - [Configuration](#configuration)
 - [Usage](#usage)
   - [Basic CLI usage](#basic-cli-usage)
+  - [Interpreting output files](#interpreting-output-files)
+    - [cluster_results.csv](#cluster_resultscsv)
+    - [annotation_results.csv](#annotation_resultscsv)
   - [Python usage](#python-usage)
 - [Under the hood: implementation details](#under-the-hood-implementation-details)
   - [Pipeline orchestration](#pipeline-orchestration)
@@ -216,9 +219,11 @@ Assuming you use the [example input data](data/example_input_folder) provided wi
 
 ```bash
 annodd \
-  --input-path data/example_input_folder \
-  --output-dir example_run
+  -i data/example_input_folder \
+  -o example_run
 ```
+
+Here `-i`/`--input-path` specify the input FASTA file or directory, and `-o`/`--output-dir` specify the output directory where all results will be written.
 
 During the initialization phase, the input folder is scanned for FASTA files. <br>
 <div style="border: 2px solid #db2d24; border-radius: 12px; padding: 0.8rem 1rem; background-color: #f6d5d5;">
@@ -241,6 +246,60 @@ After the run completes, `example_run` will contain:
 In case the run was interrupted, you can control reuse of existing outputs with the `--reuse-existing` flag (or set `pipeline.reuse_existing: true` in the config).
 
 ---
+
+### Interpreting output files
+
+After a successful run, the main summary tables are:
+
+- `annotation_results.csv` in the top-level output directory.
+- `cluster_results.csv` in the top-level output directory.
+
+Each per-species subfolder also contains a `clean_fasta_headers.json` file that maps original FASTA headers to the cleaned candidate IDs used in the tables.
+
+#### `cluster_results.csv`
+
+This file contains one row per phylogenetic cluster identified in the annotation tree. Example:
+
+| cluster_index | two_odd_id      | perc_of_ingroup_2ODD | n_ingroup_2ODD | n_candidates | plant_groups          | neighboring_cluster_idx | neighboring_cluster_dist |
+|---------------|-----------------|-----------------------|----------------|-------------|-----------------------|-------------------------|--------------------------|
+| 0             | 2ODD15          | 0.87                  | 25             | 40          | Dicots, Monocots     | 1                       | 0.12                     |
+| 1             | 2ODD19          | 0.65                  | 12             | 18          | Dicots, Gymnosperms  | 0                       | 0.12                     |
+| 2             | candidates_only |                       | 0              | 7           | Monocots             | 0                       | 0.35                     |
+
+- `cluster_index`: Integer index of the cluster (used internally and for diagnostics).
+- `two_odd_id`: The 2ODD ID assigned to this cluster. For clusters that only contain candidates (no ingroup bait sequences), this is set to `candidates_only`.
+- `perc_of_ingroup_2ODD`: Fraction of all ingroup bait sequences for this 2ODD ID that fall into this cluster. Values ≥ 0.8 (80%) indicate a well-resolved cluster.
+- `n_ingroup_2ODD`: Number of ingroup (bait) sequences of this 2ODD ID in the cluster.
+- `n_candidates`: Number of candidate sequences in the cluster.
+- `plant_groups`: Comma-separated list of plant groups represented by ingroup sequences in the cluster (e.g. Dicots, Monocots).
+- `neighboring_cluster_idx`: Index of the closest neighbouring cluster in tree space.
+- `neighboring_cluster_dist`: Tree distance to that closest neighbouring cluster.
+
+You can use `cluster_results.csv` to assess how well supported each 2ODD ID is and to inspect nearby clusters that might be functionally related.
+
+#### `annotation_results.csv`
+
+This file contains one row per candidate sequence, summarising its annotation and linking it back to the cluster-level information. Example:
+
+| candidate                                           | annotated_two_odd_id | annotated_function | annotated_metabolic_pathway | cluster_index | cluster_two_odd_id | consensus_function | consensus_metabolic_pathway           | species               |
+|-----------------------------------------------------|----------------------|--------------------|-----------------------------|---------------|--------------------|--------------------|----------------------------------------|-----------------------|
+| XM_002873456.1_F3H_Arabidopsis_thaliana__3702       | 2ODD15               | F3H                | flavonoid_pathway           | 0             | 2ODD15             | F3H                | flavonoid_pathway                      | Arabidopsis thaliana |
+| XP_019283746.1_unknown_Oryza_sativa__4530           |                      |                    |                             | 1             | 2ODD19             | COD                | benzylisoquinoline_biosynthesis        | Oryza sativa         |
+| lcl_contig00042_12345_predicted_protein__3702       |                      |                    |                             | 2             | candidates_only    |                    |                                        | Arabidopsis thaliana |
+
+Columns:
+
+- `candidate`: Cleaned sequence identifier used throughout the pipeline. The original FASTA headers for each species can be looked up in the corresponding `clean_fasta_headers.json` file inside that species’ subfolder in the output directory.
+- `annotated_two_odd_id`: The final 2ODD ID assigned to the candidate when the cluster is considered well resolved (typically `perc_of_ingroup_2ODD ≥ 0.8`). A filled value here indicates a high-confidence annotation.
+- `annotated_function`: Consensus enzymatic function is only set when a high-confidence `annotated_two_odd_id` exists and the characterized baits for that 2ODD ID support a clear consensus. In detail: if ≥90% of the characterized baits with that 2ODD ID share the same function (checkout [major_2ODD_char_info.json](data/2ODDs/major_2ODD_char_info.json)), then that function is treated as the consensus function for that 2ODD ID. If further the candidate sequence fell into a cluster with a high cluster resolution (i.e., `perc_of_ingroup_2ODD` ≥ 0.8), then that 2ODD ID and its consensus function can be confidently assigned to the candidate sequence.
+- `annotated_metabolic_pathway`: Consensus metabolic pathway (e.g. flavonoid_pathway), defined analogously to `annotated_function`.
+- `cluster_index`: Integer index of the cluster that this candidate belongs to (matches the `cluster_index` column in `cluster_results.csv` and can be used to inspect cluster-level statistics).
+- `cluster_two_odd_id`: The 2ODD ID associated with the candidate’s cluster (or `candidates_only` if the cluster contains no ingroup baits). 
+- `associated_functions`: Looking at the characterized information given for each 2ODD [check out the `major_2ODD_char_info.json` file](data/2ODDs/major_2ODD_char_info.json), these are all the functions characterized for a given 2ODD ID. If a candidate clusters with lets say 2ODD13, then this column will list all the functions that are characterized for 2ODD13, which is primarily F3H. This provides an overview of which functions are associated with the 2ODD ID the candidate clusters with. However, this does not necessarily be the true function of the candidate. 
+- `associated_metabolic_pathways`: Similar to `associated_functions`, but for metabolic pathways.
+- `species`: Human-readable species name corresponding to the taxonomic ID encoded in the candidate header, resolved via the NCBI taxonomy database.
+
+In short, the `annotated_*` columns reflect high-certainty assignments for individual candidates, while `cluster_index`/`cluster_two_odd_id` together with `consensus_function` and `consensus_metabolic_pathway` describe what the surrounding cluster is likely doing, even when the candidate itself does not cross the resolution threshold.
 
 
 ### Python usage

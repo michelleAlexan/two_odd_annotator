@@ -14,6 +14,7 @@ def main():
     )
 
     parser.add_argument(
+        "-i",
         "--input-path",
         required=True,
         help="Path to the input FASTA file or directory containing FASTA files. "
@@ -22,6 +23,7 @@ def main():
     )
 
     parser.add_argument(
+        "-o",
         "--output-dir",
         required=True,
         help="Path to the output base directory where results will be stored. "

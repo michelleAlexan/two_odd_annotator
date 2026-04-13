@@ -256,10 +256,10 @@ class State:
 
         for orig_file_path in self.input_fasta_paths:
             orig_file = orig_file_path.name
-
-            print(f"Initializing subdir for {orig_file}")
             if self.log_path is not None:
                 log_line(self.log_path, f"Initializing subdir for {orig_file}")
+            else:
+                print(f"Initializing subdir for {orig_file}")
             input_file_name = self._get_base_name(orig_file)
             inferred_sp_name = self._infer_species_from_file_name(input_file_name)
 

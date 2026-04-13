@@ -4,24 +4,24 @@ from pathlib import Path
 from two_odd_annotator.pipeline.runner import Runner
 
 from two_odd_annotator.constants import (
-    DIAMOND_RESULTS ,
+    DIAMOND_RESULTS,
     HMMER_RESULTS,
     BLASTP_RESULTS,
 
-    FILTERED_DIAMOND_HITS ,
+    FILTERED_DIAMOND_HITS,
     FILTERED_HMMER_HITS,
-    FILTERED_BLASTP_HITS, 
+    FILTERED_BLASTP_HITS,
 
     FILTERED_DIAMOND_FASTA,
     FILTERED_HMMER_FASTA,
     FILTERED_BLASTP_FASTA,
-
 
     ANNOTATION_CSV,
     ANNOTATION_FASTA,
     ANNOTATION_MSA,
     ANNOTATION_MSA_TRIM,
     ANNOTATION_TREE,
+    CLUSTER_CSV,
 )
 
 # under tests/data/ there are two test files
@@ -97,8 +97,9 @@ def test_runner_pipeline(tmp_path):
         assert (sub / FILTERED_BLASTP_HITS).exists()
         assert (sub / FILTERED_BLASTP_FASTA).exists()
 
-    # expected annotation results files
+    # expected annotation and cluster results files
     assert (output_dir / ANNOTATION_CSV).exists()
+    assert (output_dir / CLUSTER_CSV).exists()
     assert (output_dir / ANNOTATION_FASTA).exists()
     assert (output_dir / ANNOTATION_MSA).exists()
     assert (output_dir / ANNOTATION_MSA_TRIM).exists()

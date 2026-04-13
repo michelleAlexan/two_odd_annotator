@@ -12,7 +12,7 @@ from typing import Literal
 
 from two_odd_annotator.utils.msa import run_mafft, trim_msa_by_gap_fraction
 from two_odd_annotator.utils.phylo import run_fasttree
-
+from two_odd_annotator.utils.taxonomy import map_scientific_notation_to_tax_id
 
 from two_odd_annotator.constants import (
     FILTERED_HMMER_FASTA,
@@ -23,6 +23,7 @@ from two_odd_annotator.constants import (
     ANNOTATION_MSA_TRIM,
     ANNOTATION_TREE,
     ANNOTATION_CSV,
+    CLUSTER_CSV,
 )
 
 MAJOR_MINOR_2ODD_DICT = json.load(
@@ -1091,6 +1092,9 @@ def run(
     )
     cluster_df = clusters_meta_to_df(meta_info, neighboring_clusters)
 
+    # Save cluster-level results for user inspection
+    cluster_df.to_csv(result_dir / CLUSTER_CSV, index=False)
+
     # 2ODD_info_df:
     # all 2ODD ids and, if applicable, their associated functions and metabolic pathways shown in experiments
     two_odd_info_df = (
@@ -1114,14 +1118,41 @@ def run(
         seq_id_to_idx_dict=seq_id_to_idx,
     )
 
-    # create left join of candidate_char_baits_df with two_odd_info_df and cluster_df to get a full picture of each candidate's assigned cluster, closest characterized baits, and the known functions of those baits
+    # create left join of candidate_char_baits_df with two_odd_info_df and cluster_df to get a full picture of each candidate's assigned cluster, 
+    # closest characterized baits, and the known functions of those baits
     candidate_char_baits_full_df = candidate_char_baits_df.merge(
         cluster_df, how="left", left_on="cluster_idx", right_on="cluster_index"
     ).merge(two_odd_info_df, how="left", left_on="two_odd_id", right_on="two_odd_id")
+
     annotation_df = add_annotation_columns(candidate_char_baits_full_df)
 
-    # save dataframe
-    annotation_df.to_csv(result_dir / ANNOTATION_CSV, index=False)
+    # Derive user-facing columns
+    # - cluster_two_odd_id: the cluster-level 2ODD ID
+    # - consensus_metabolic_pathway: rename from consensus_pathway
+    # - species: human-readable species name derived from the taxid in the header
+
+    annotation_df = annotation_df.copy()
+    annotation_df["cluster_two_odd_id"] = annotation_df["two_odd_id"]
+    annotation_df["consensus_metabolic_pathway"] = annotation_df[
+        "consensus_pathway"
+    ]
+    annotation_df["species"] = annotation_df["candidate"].map(
+    lambda c: tax2names[int(c.split("__")[-1])])
+
+    # Final user-facing annotation table
+    final_cols = [
+        "candidate",
+        "annotated_two_odd_id",
+        "annotated_function",
+        "annotated_metabolic_pathway",
+        "cluster_index",
+        "cluster_two_odd_id",
+        "associated_functions",
+        "associated_metabolic_pathways",
+        "species",
+    ]
+
+    annotation_df[final_cols].to_csv(result_dir / ANNOTATION_CSV, index=False)
 
     return annotation_df
 
