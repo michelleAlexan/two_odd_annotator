@@ -24,7 +24,7 @@ The `two_odd_annotator` is a Python bioinformatics tool that lets you find putat
   - [Python usage](#python-usage)
 - [Under the hood: implementation details](#under-the-hood-implementation-details)
   - [Pipeline orchestration](#pipeline-orchestration)
-  - [Sequence‑similarity filtering](#sequence‑similarity-filtering)
+  - [Sequence-similarity filtering](#sequence-similarity-filtering)
   - [Annotation](#annotation)
   - [Visualization](#visualization)
 
@@ -34,7 +34,7 @@ In the era of high-throughput sequencing, functional annotation of genes became 
 
 ### Bait sequence collection
 
-The `two_odd_annotator` relies on a carefully curated collection of “bait” 2ODD sequences. The foundation of all references for this software consists of 300 [experimentally characterized 2ODD sequences](data/2ODDs/char_baits.xlsx) from the literature. The `two_odd_annotator` can utilize [diamond](/data/2ODDs/dmnd_ref_db.dmnd) / [blast+](data/2ODDs/blast_ref_db) reference database and / or the [Hidden Markov Model (HMM) profile](data/2ODDs/2ODD_domain.hmm) for the [sequence‑similarity filtering](#service-1-sequence‑similarity-filtering) step. All these similarity-references were built from these 300 characterized bait sequences. 
+The `two_odd_annotator` relies on a carefully curated collection of “bait” 2ODD sequences. The foundation of all references for this software consists of 300 [experimentally characterized 2ODD sequences](data/2ODDs/characterized_2ODDs.fasta) from the literature. The `two_odd_annotator` can utilize [diamond](data/2ODDs/dmnd_ref_db.dmnd) / [blast+](data/2ODDs/blast_ref_db) reference database and / or the [Hidden Markov Model (HMM) profile](data/2ODDs/2ODD_domain.hmm) for the [sequence-similarity filtering](#sequence-similarity-filtering) step. All these similarity-references were built from these 300 characterized bait sequences. 
 
 
 As some functional classes of the *characterized* sequence collection are underrepresented or taxonomic diversity is limited, the bait sequence collection has been expanded by incorporating the 2ODD-like sequences from 200 plant species spanning 43 taxonomic orders. For the detailed expansion workflow on the expansion and careful curation and optimization of the bait sequence collection, checkout [bait_sequence_collection repository](https://github.com/michelleAlexan/bait_sequence_collection). 
@@ -67,12 +67,12 @@ Broadly speaking, the `two_odd_annotator` takes as input a set of plant protein 
 
 
 Detailed speaking, the data flow of the pipeline is as follows (see Figure 3):
-1. The user provides a path to an input folder containing plant protein FASTA files (one per species) and a path to an output folder where the result files should be written. Additionally, the user can provide a YAML configuration file where parameters like for the sequence‑similarity filtering and annotation steps can be set. If no config path is provided, the pipeline will use the [default configuration](configs/default_config.yml).
+1. The user provides a path to an input folder containing plant protein FASTA files (one per species) and a path to an output folder where the result files should be written. Additionally, the user can provide a YAML configuration file where parameters like for the sequence-similarity filtering and annotation steps can be set. If no config path is provided, the pipeline will use the [default configuration](configs/default_config.yml).
 2. The output folder structure is initialized (by the [pipeline-orchestration](#pipeline-orchestration)) with one subdirectory per species (named after the species name inferred from the input FASTA filename).
     - A copy with cleaned headers of the input FASTA is saved in the corresponding species. 
     - A mapping of old sequence headers to cleaned headers is saved.
     - In case the species name cannot be correctly inferred from the filename, the user can provide a custom mapping of incorrect to correct species names in the config file.
-3. For each species, 2ODD candidates are [pre-filtered using sequence similarity search tools](#service-1-sequencesimilarity-filtering-servicesseq_sim_filter) against a 2ODD reference (HMMER/DIAMOND/BLASTP). By default, HMMER method is used.
+3. For each species, 2ODD candidates are [pre-filtered using sequence similarity search tools](#sequence-similarity-filtering) against a 2ODD reference (HMMER/DIAMOND/BLASTP). By default, HMMER method is used.
     - This results in three output files per species: 
       - the raw output of the similarity search, 
       - a filtered table of hits that pass the defined thresholds (set in the config file), 
@@ -103,7 +103,7 @@ Requirements:
 - Python version 3.13 (version 3.14 is not yet supported by all dependencies, e.g. `ete4`)
 - A Unix‑like environment (Linux or macOS).
 
-For **sequence‑similarity filtering** (`services.seq_sim_filter`), you need at least one of the following tools installed and available on your `PATH`:
+For **sequence-similarity filtering** (`services.seq_sim_filter`), you need at least one of the following tools installed and available on your `PATH`:
 
 - `hmmsearch` (HMMER 3) – used for HMM‑based filtering (DEFAULT)
 - `diamond` (DIAMOND) – used for DIAMOND‑based filtering.
@@ -281,11 +281,11 @@ You can use `cluster_results.csv` to assess how well supported each 2ODD ID is a
 
 This file contains one row per candidate sequence, summarising its annotation and linking it back to the cluster-level information. Example:
 
-| candidate                                           | annotated_two_odd_id | annotated_function | annotated_metabolic_pathway | cluster_index | cluster_two_odd_id | consensus_function | consensus_metabolic_pathway           | species               |
-|-----------------------------------------------------|----------------------|--------------------|-----------------------------|---------------|--------------------|--------------------|----------------------------------------|-----------------------|
-| XM_002873456.1_F3H_Arabidopsis_thaliana__3702       | 2ODD15               | F3H                | flavonoid_pathway           | 0             | 2ODD15             | F3H                | flavonoid_pathway                      | Arabidopsis thaliana |
-| XP_019283746.1_unknown_Oryza_sativa__4530           |                      |                    |                             | 1             | 2ODD19             | COD                | benzylisoquinoline_biosynthesis        | Oryza sativa         |
-| lcl_contig00042_12345_predicted_protein__3702       |                      |                    |                             | 2             | candidates_only    |                    |                                        | Arabidopsis thaliana |
+| candidate                                           | annotated_two_odd_id | annotated_function | annotated_metabolic_pathway | cluster_index | cluster_two_odd_id | associated_functions | associated_metabolic_pathways | species               |
+|-----------------------------------------------------|----------------------|--------------------|-----------------------------|---------------|--------------------|----------------------|-------------------------------|-----------------------|
+| XM_002873456.1_F3H_Arabidopsis_thaliana__3702       | 2ODD15               | F3H                | flavonoid_pathway           | 0             | 2ODD15             | F3H                  | flavonoid_pathway             | Arabidopsis thaliana |
+| XP_019283746.1_unknown_Oryza_sativa__4530           |                      |                    |                             | 1             | 2ODD19             | COD                  | benzylisoquinoline_biosynthesis | Oryza sativa         |
+| lcl_contig00042_12345_predicted_protein__3702       |                      |                    |                             | 2             | candidates_only    |                      |                               | Arabidopsis thaliana |
 
 Columns:
 
@@ -340,19 +340,19 @@ pipeline.run()
 ```
 
 The `Runner` class handles the following steps:
-1. **Configuration loading**: It loads the YAML configuration file that specifies parameters for the sequence‑similarity filtering and annotation steps, as well as paths to reference databases and other resources.
+1. **Configuration loading**: It loads the YAML configuration file that specifies parameters for the sequence-similarity filtering and annotation steps, as well as paths to reference databases and other resources.
 2. **State initialization**: A [pipeline.state.State](src/two_odd_annotator/pipeline/state.py) object scans the input for FASTA files, infers species names, creates/updates one subdirectory per species under the output directory, and records which filtering and annotation steps have already been completed (based on existing output files) if `pipeline.reuse_existing: true` is set in the config.
 3. **Service execution**:
-  - For each species subdirectory, the sequence‑similarity filtering service is run (unless its expected outputs already exist and reuse is enabled).
+  - For each species subdirectory, the sequence-similarity filtering service is run (unless its expected outputs already exist and reuse is enabled).
   - After all species have been filtered, the annotation service is called once on the whole output directory. It can reuse existing intermediate annotation outputs (`annotation.fasta`, MSA, trimmed MSA, tree) when `reuse_existing` is enabled, or recompute them from scratch otherwise.
 4. **Result management**: It ensures that intermediate and final results are saved in an organized manner under the specified output directory. Optionally, intermediate annotation files (FASTA/MSA/tree) can be deleted after a successful run if `pipeline.delete_intermediate_files: true` is set in the config.
 
 
 
 
-### Sequence‑similarity filtering
+### Sequence-similarity filtering
 
-The [sequence‑similarity filtering service](src/two_odd_annotator/services/seq_sim_filter.py) identifies candidate 2ODD‑like proteins from the input plant `.pep.fasta` files. It supports three methods for sequence similarity search:
+The [sequence-similarity filtering service](src/two_odd_annotator/services/seq_sim_filter.py) identifies candidate 2ODD‑like proteins from the input plant `.pep.fasta` files. It supports three methods for sequence similarity search:
 - **HMMER**: which uses profile Hidden Markov Models (HMMs) to identify sequences matching a specific domain profile (in this case, the 2ODD domain).
 - **DIAMOND**: a fast sequence aligner that can be used for large datasets
 - **BLASTP**: the classic BLAST tool for protein sequence alignment, which is widely used but can be slower than DIAMOND for large datasets.
