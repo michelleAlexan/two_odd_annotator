@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import json
 
 from two_odd_annotator.constants import (
     RESULTS_DIR,
@@ -44,6 +45,7 @@ class State:
         input_path: Path,
         output_base_dir: Path,
         log_path: Path | str | None = None,
+        sp_name_mapping_path: str | Path | None = None,
     ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
@@ -51,6 +53,12 @@ class State:
         # optional path to a run log where initialization messages can be
         # written; used by Runner but not required by tests.
         self.log_path = str(log_path) if log_path is not None else None
+
+        # optional mapping of "inferred species name" -> "correct NCBI species name"
+        # loaded from JSON. Keys may be provided with underscores or spaces.
+        self._sp_name_map: dict[str, str] = {}
+        if sp_name_mapping_path is not None:
+            self._sp_name_map = self._load_species_name_mapping(sp_name_mapping_path)
 
         self.input_fasta_paths = []
         self._validate_fasta_input_exists()
@@ -87,6 +95,38 @@ class State:
         # Initialize output directory structure
         self._prepare_output_directory()
         self._initialize_species_subdirs()
+
+    def _normalize_species_key(self, name: str) -> str:
+        return " ".join(name.replace("_", " ").strip().split())
+
+    def _load_species_name_mapping(self, mapping_path: str | Path) -> dict[str, str]:
+        path = Path(mapping_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Species name mapping JSON not found: {path}")
+
+        raw = json.loads(path.read_text())
+        if not isinstance(raw, dict):
+            raise ValueError(
+                f"Species name mapping must be a JSON object (dict), got: {type(raw).__name__}"
+            )
+
+        normalized: dict[str, str] = {}
+        for k, v in raw.items():
+            if not isinstance(k, str) or not isinstance(v, str):
+                continue
+            nk = self._normalize_species_key(k)
+            nv = self._normalize_species_key(v)
+            if nk:
+                normalized[nk] = nv
+
+        return normalized
+
+    def _apply_species_name_mapping(self, inferred_name: str) -> str:
+        if not self._sp_name_map:
+            return inferred_name
+
+        key = self._normalize_species_key(inferred_name)
+        return self._sp_name_map.get(key, inferred_name)
 
     # ------------ HELPER METHODS ---------------
     def _get_base_name(self, path: Path) -> str:
@@ -263,10 +303,18 @@ class State:
             input_file_name = self._get_base_name(orig_file)
             inferred_sp_name = self._infer_species_from_file_name(input_file_name)
 
+            mapped_sp_name = self._apply_species_name_mapping(inferred_sp_name)
+            if mapped_sp_name != inferred_sp_name:
+                msg = f"Species name mapping: {inferred_sp_name} -> {mapped_sp_name}"
+                if self.log_path is not None:
+                    log_line(self.log_path, msg)
+                else:
+                    print(msg)
+
             # with inferred species name, get tax id and true scientific name
             # (in case of misspellings in the filename)
             tax_id_dict = map_scientific_notation_to_tax_id(
-                inferred_sp_name, raise_on_error=True
+                mapped_sp_name, raise_on_error=True
             )
             scientific_sp_name, tax_id = (
                 list(tax_id_dict.keys())[0],

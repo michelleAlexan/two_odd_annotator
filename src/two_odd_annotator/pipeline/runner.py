@@ -58,6 +58,9 @@ class Runner:
         if reuse_existing is not None:
             self.config["pipeline"]["reuse_existing"] = reuse_existing
         if sp_name_mapping is not None:
+            # Config historically used both keys; set both for compatibility.
+            self.config.setdefault("pipeline", {})
+            self.config["pipeline"]["sp_name_mapping"] = sp_name_mapping
             self.config["pipeline"]["species_name_map"] = sp_name_mapping
         if seq_sim_method is not None:
             self.config["pipeline"]["seq_sim_method"] = seq_sim_method
@@ -102,6 +105,11 @@ class Runner:
         # any current working directory.
         self._resolve_config_paths()
 
+        pipeline_cfg = self.config.get("pipeline", {})
+        sp_name_mapping_path = pipeline_cfg.get("sp_name_mapping") or pipeline_cfg.get(
+            "species_name_map"
+        )
+
         # initialize the pipeline run by creating a state object.
         # State tracks initializes output directory and subdirectories,
         # validates input files,
@@ -110,6 +118,7 @@ class Runner:
             input_path=self.input_path,
             output_base_dir=self.output_base_dir,
             log_path=self.log_path,
+            sp_name_mapping_path=sp_name_mapping_path,
         )
 
     def _resolve_config_paths(self) -> None:
