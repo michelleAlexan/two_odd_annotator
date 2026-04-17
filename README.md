@@ -19,8 +19,8 @@ The `two_odd_annotator` is a Python bioinformatics tool that lets you find putat
 - [Usage](#usage)
   - [Basic CLI usage](#basic-cli-usage)
   - [Interpreting output files](#interpreting-output-files)
-    - [cluster_results.csv](#cluster_resultscsv)
-    - [annotation_results.csv](#annotation_resultscsv)
+    - [cluster_results.tsv](#cluster_resultstsv)
+    - [annotation_results.tsv](#annotation_resultstsv)
   - [Python usage](#python-usage)
 - [Under the hood: implementation details](#under-the-hood-implementation-details)
   - [Pipeline orchestration](#pipeline-orchestration)
@@ -250,7 +250,7 @@ During the initialization phase, the input folder is scanned for FASTA files. <b
 
 After the run completes, `example_run` will contain:
 - one subdirectory per input species (with the `hmmer` output files if `hmmer` was used as prefiltering method), and
-- in the output directory, annotation files such as `annotation.fasta`, `annotation_msa.fasta`, `annotation_msa_trim.fasta`, `annotation_tree.nwk`, and `annotation_results.csv`(if `--delete-intermediate-files` is not set to `true`, otherwise only the `annotation_results.csv` will be retained).
+- in the output directory, annotation files such as `annotation.fasta`, `annotation_msa.fasta`, `annotation_msa_trim.fasta`, `annotation_tree.nwk`, and `annotation_results.tsv` (if `--delete-intermediate-files` is not set to `true`, otherwise only the `annotation_results.tsv` will be retained).
 
 In case the run was interrupted, you can control reuse of existing outputs with the `--reuse-existing` flag (or set `pipeline.reuse_existing: true` in the config).
 
@@ -260,12 +260,12 @@ In case the run was interrupted, you can control reuse of existing outputs with 
 
 After a successful run, the main summary tables are:
 
-- `annotation_results.csv` in the top-level output directory.
-- `cluster_results.csv` in the top-level output directory.
+- `annotation_results.tsv` in the top-level output directory.
+- `cluster_results.tsv` in the top-level output directory.
 
 Each per-species subfolder also contains a `clean_fasta_headers.json` file that maps original FASTA headers to the cleaned candidate IDs used in the tables.
 
-#### `cluster_results.csv`
+#### `cluster_results.tsv`
 
 This file contains one row per phylogenetic cluster identified in the annotation tree. Example:
 
@@ -284,9 +284,9 @@ This file contains one row per phylogenetic cluster identified in the annotation
 - `neighboring_cluster_idx`: Index of the closest neighbouring cluster in tree space.
 - `neighboring_cluster_dist`: Tree distance to that closest neighbouring cluster.
 
-You can use `cluster_results.csv` to assess how well supported each 2ODD ID is and to inspect nearby clusters that might be functionally related.
+You can use `cluster_results.tsv` to assess how well supported each 2ODD ID is and to inspect nearby clusters that might be functionally related.
 
-#### `annotation_results.csv`
+#### `annotation_results.tsv`
 
 This file contains one row per candidate sequence, summarising its annotation and linking it back to the cluster-level information. Example:
 
@@ -302,7 +302,7 @@ Columns:
 - `annotated_two_odd_id`: The final 2ODD ID assigned to the candidate when the cluster is considered well resolved (typically `perc_of_ingroup_2ODD ≥ 0.8`). A filled value here indicates a high-confidence annotation.
 - `annotated_function`: Consensus enzymatic function is only set when a high-confidence `annotated_two_odd_id` exists and the characterized baits for that 2ODD ID support a clear consensus. In detail: if ≥90% of the characterized baits with that 2ODD ID share the same function (checkout [major_2ODD_char_info.json](data/2ODDs/major_2ODD_char_info.json)), then that function is treated as the consensus function for that 2ODD ID. If further the candidate sequence fell into a cluster with a high cluster resolution (i.e., `perc_of_ingroup_2ODD` ≥ 0.8), then that 2ODD ID and its consensus function can be confidently assigned to the candidate sequence.
 - `annotated_metabolic_pathway`: Consensus metabolic pathway (e.g. flavonoid_pathway), defined analogously to `annotated_function`.
-- `cluster_index`: Integer index of the cluster that this candidate belongs to (matches the `cluster_index` column in `cluster_results.csv` and can be used to inspect cluster-level statistics).
+- `cluster_index`: Integer index of the cluster that this candidate belongs to (matches the `cluster_index` column in `cluster_results.tsv` and can be used to inspect cluster-level statistics).
 - `cluster_two_odd_id`: The 2ODD ID associated with the candidate’s cluster (or `candidates_only` if the cluster contains no ingroup baits). 
 - `associated_functions`: Looking at the characterized information given for each 2ODD [check out the `major_2ODD_char_info.json` file](data/2ODDs/major_2ODD_char_info.json), these are all the functions characterized for a given 2ODD ID. If a candidate clusters with lets say 2ODD13, then this column will list all the functions that are characterized for 2ODD13, which is primarily F3H. This provides an overview of which functions are associated with the 2ODD ID the candidate clusters with. However, this does not necessarily be the true function of the candidate. 
 - `associated_metabolic_pathways`: Similar to `associated_functions`, but for metabolic pathways.

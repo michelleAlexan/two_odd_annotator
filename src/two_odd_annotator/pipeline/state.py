@@ -243,7 +243,7 @@ class State:
         - annotation_msa.fasta
         - annotation_msa_trim.fasta
         - annotation_tree.nwk
-        - annotation_results.csv
+        - annotation_results.tsv
         """
 
         self.output_base_dir.mkdir(parents=True, exist_ok=True)

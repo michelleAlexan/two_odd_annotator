@@ -25,5 +25,11 @@ ANNOTATION_FASTA = "annotation.fasta"
 ANNOTATION_MSA = "annotation_msa.fasta"
 ANNOTATION_MSA_TRIM = "annotation_msa_trim.fasta"
 ANNOTATION_TREE = "annotation_tree.nwk"
-ANNOTATION_CSV = "annotation_results.csv"
-CLUSTER_CSV = "cluster_results.csv"
+
+# top-level summary tables
+ANNOTATION_TSV = "annotation_results.tsv"
+CLUSTER_TSV = "cluster_results.tsv"
+
+# Backwards-compatible aliases (older versions used .csv)
+ANNOTATION_CSV = ANNOTATION_TSV
+CLUSTER_CSV = CLUSTER_TSV

@@ -1096,7 +1096,7 @@ def run(
     cluster_df = clusters_meta_to_df(meta_info, neighboring_clusters)
 
     # Save cluster-level results for user inspection
-    cluster_df.to_csv(result_dir / CLUSTER_CSV, index=False)
+    cluster_df.to_csv(result_dir / CLUSTER_CSV, index=False, sep="\t")
 
     # 2ODD_info_df:
     # all 2ODD ids and, if applicable, their associated functions and metabolic pathways shown in experiments
@@ -1155,7 +1155,9 @@ def run(
         "species",
     ]
 
-    annotation_df[final_cols].to_csv(result_dir / ANNOTATION_CSV, index=False)
+    annotation_df[final_cols].to_csv(
+        result_dir / ANNOTATION_CSV, index=False, sep="\t"
+    )
 
     return annotation_df
 
