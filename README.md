@@ -150,6 +150,10 @@ source .venv/bin/activate
 
 You can configure pipeline parameters, reference databases and thresholds via a YAML file. By default, you can keep a config like `configs/default_config.yml`, but any path can be used.
 
+**Note on paths in the config file**:
+The default config uses relative paths (e.g. `data/2ODDs/...`). These paths are expected to point to the reference files shipped with / located alongside the repository.
+If you copy `default_config.yml` somewhere else or run the pipeline in an environment where the `data/` folder is not present at the same relative location, update all path fields (e.g. `filter_tools.*.reference_db`, `filter_tools.hmmer.domain_model`, `annotate.*`, and `pipeline.sp_name_mapping`) to absolute paths on your machine.
+
 Example `default_config.yml`:
 
 ```yaml
