@@ -223,6 +223,15 @@ annodd \
   -o example_run
 ```
 
+To override the number of threads/CPUs without editing the config file, use `--threads`:
+
+```bash
+annodd \
+  -i data/example_input_folder \
+  -o example_run \
+  --threads 8
+```
+
 Here `-i`/`--input-path` specify the input FASTA file or directory, and `-o`/`--output-dir` specify the output directory where all results will be written.
 
 During the initialization phase, the input folder is scanned for FASTA files. <br>

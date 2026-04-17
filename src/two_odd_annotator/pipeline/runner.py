@@ -30,6 +30,7 @@ class Runner:
         output_base_dir: str,
         # optional arguments
         config_path: str | None = None,
+        threads: int | None = None,
         reuse_existing: bool | None = None,
         sp_name_mapping: str | None = None,
         seq_sim_method: str | None = None,
@@ -49,6 +50,11 @@ class Runner:
         self.config = io.load_config(self.config_path)
 
         # override config values with any provided optional arguments
+        if threads is not None:
+            if threads < 1:
+                raise ValueError(f"threads must be >= 1, got {threads}")
+            self.config.setdefault("parameters", {})
+            self.config["parameters"]["threads"] = int(threads)
         if reuse_existing is not None:
             self.config["pipeline"]["reuse_existing"] = reuse_existing
         if sp_name_mapping is not None:

@@ -206,6 +206,7 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
     Run hmmsearch, filter using thresholds from config, and write filtered FASTA and CSV.
     """
     hmmer_cfg = config["filter_tools"]["hmmer"]
+    threads = int(config.get("parameters", {}).get("threads", 1))
     thresholds = {
         key: float(val) for key, val in config["parameters"]["thresholds_hmmer"].items()
     }
@@ -226,7 +227,7 @@ def run_hmmer(input_file: str, output_dir: str, config: dict) -> pd.DataFrame:
         return pd.read_csv(filtered_csv)
 
     # Run hmmsearch
-    cmd = ["hmmsearch", hmmer_cfg["domain_model"], input_file]
+    cmd = ["hmmsearch", "--cpu", str(threads), hmmer_cfg["domain_model"], input_file]
     print("Run:", " ".join(cmd))
     with open(output_txt, "w") as out_f:
         result = subprocess.run(cmd, stdout=out_f, stderr=subprocess.PIPE, text=True)

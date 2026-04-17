@@ -36,6 +36,13 @@ def main():
     )
 
     parser.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        help="Override config: number of threads/CPUs to use for external tools (e.g. DIAMOND/BLASTP/HMMER/MAFFT).",
+    )
+
+    parser.add_argument(
         "--version", action="version", version=f"annodd {version('two_odd_annotator')}"
     )
 
@@ -91,6 +98,7 @@ def main():
         input_path=args.input_path,
         output_base_dir=args.output_dir,
         config_path=args.config_path,
+        threads=args.threads,
         reuse_existing=(
             args.reuse_existing.lower() == "true" if args.reuse_existing else None
         ),

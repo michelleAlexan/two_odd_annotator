@@ -253,6 +253,7 @@ def from_fasta_to_nwk(
     msa_path: Path,
     msa_trim_path: Path,
     tree_path: Path,
+    threads: int | None = None,
     completed_msa: bool = False,
     completed_msa_trim: bool = False,
     completed_tree: bool = False,
@@ -264,7 +265,7 @@ def from_fasta_to_nwk(
 
     # run MSA
     if not completed_msa:
-        run_mafft(input_fasta=fasta_path, output_fasta=msa_path)
+        run_mafft(input_fasta=fasta_path, output_fasta=msa_path, threads=threads)
 
     # trim MSA
     if not completed_msa_trim:
@@ -274,7 +275,7 @@ def from_fasta_to_nwk(
 
     # run FastTree to build tree for annotation
     if not completed_tree:
-        run_fasttree(input_alignment=msa_trim_path, output_tree=tree_path)
+        run_fasttree(input_alignment=msa_trim_path, output_tree=tree_path, threads=threads)
 
 
 def assign_2ODD_props(
@@ -1008,6 +1009,7 @@ def run(
     annotation_tree_path = result_dir / ANNOTATION_TREE
     save_tree = config["annotate"].get("save_tree", False)
     reuse_existing = config["pipeline"].get("reuse_existing", False)
+    threads = int(config.get("parameters", {}).get("threads", 1))
 
     if not reuse_existing:
         completed_annotation_steps = (
@@ -1052,6 +1054,7 @@ def run(
             msa_path=annotation_msa_path,
             msa_trim_path=annotation_msa_trim_path,
             tree_path=annotation_tree_path,
+            threads=threads,
             completed_msa=completed_msa,
             completed_msa_trim=completed_msa_trim,
             completed_tree=completed_tree,

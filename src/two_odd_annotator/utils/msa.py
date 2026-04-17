@@ -7,7 +7,9 @@ from Bio import AlignIO
 from Bio.Align import MultipleSeqAlignment
 
 
-def run_mafft(input_fasta: str | Path, output_fasta: str | Path) -> None:
+def run_mafft(
+    input_fasta: str | Path, output_fasta: str | Path, threads: int | None = None
+) -> None:
     """Run MAFFT on ``input_fasta`` and write the alignment to ``output_fasta``.
 
     This is a thin wrapper around the ``mafft`` CLI and assumes it is
@@ -17,7 +19,12 @@ def run_mafft(input_fasta: str | Path, output_fasta: str | Path) -> None:
     input_fasta = Path(input_fasta)
     output_fasta = Path(output_fasta)
 
-    cmd = ["mafft", "--auto", str(input_fasta)]
+    cmd = ["mafft", "--auto"]
+    if threads is not None:
+        if threads < 1:
+            raise ValueError(f"threads must be >= 1, got {threads}")
+        cmd.extend(["--thread", str(int(threads))])
+    cmd.append(str(input_fasta))
     with output_fasta.open("w") as out_f:
         result = subprocess.run(cmd, stdout=out_f, stderr=subprocess.PIPE, text=True)
 
