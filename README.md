@@ -34,7 +34,7 @@ In the era of high-throughput sequencing, functional annotation of genes became 
 
 ### Bait sequence collection
 
-The `two_odd_annotator` relies on a carefully curated collection of “bait” 2ODD sequences. The foundation of all references for this software consists of 300 [experimentally characterized 2ODD sequences](data/2ODDs/characterized_2ODDs.fasta) from the literature. The `two_odd_annotator` can utilize [diamond](data/2ODDs/dmnd_ref_db.dmnd) / [blast+](data/2ODDs/blast_ref_db) reference database and / or the [Hidden Markov Model (HMM) profile](data/2ODDs/2ODD_domain.hmm) for the [sequence-similarity filtering](#sequence-similarity-filtering) step. All these similarity-references were built from these 300 characterized bait sequences. 
+The `two_odd_annotator` relies on a carefully curated collection of “bait” 2ODD sequences. The foundation of all references for this software consists of 313 [experimentally characterized 2ODD sequences](data/2ODDs/characterized_2ODDs.fasta) from the literature. The `two_odd_annotator` can utilize [diamond](data/2ODDs/dmnd_ref_db.dmnd) / [blast+](data/2ODDs/blast_ref_db) reference database and / or the [Hidden Markov Model (HMM) profile](data/2ODDs/2ODD_domain.hmm) for the [sequence-similarity filtering](#sequence-similarity-filtering) step. All these similarity-references were built from these 313 characterized bait sequences. 
 
 
 As some functional classes of the *characterized* sequence collection are underrepresented or taxonomic diversity is limited, the bait sequence collection has been expanded by incorporating the 2ODD-like sequences from 200 plant species spanning 43 taxonomic orders. For the detailed expansion workflow on the expansion and careful curation and optimization of the bait sequence collection, checkout [bait_sequence_collection repository](https://github.com/michelleAlexan/bait_sequence_collection). 
@@ -95,7 +95,7 @@ Detailed speaking, the data flow of the pipeline is as follows (see Figure 3):
 
 
 
-
+ 
 ## Installation
 
 Requirements:
@@ -297,8 +297,8 @@ This file contains one row per candidate sequence, summarising its annotation an
 
 | candidate                                           | annotated_two_odd_id | annotated_function | annotated_metabolic_pathway | cluster_index | cluster_two_odd_id | associated_functions | associated_metabolic_pathways | species               |
 |-----------------------------------------------------|----------------------|--------------------|-----------------------------|---------------|--------------------|----------------------|-------------------------------|-----------------------|
-| XM_002873456.1_F3H_Arabidopsis_thaliana__3702       | 2ODD15               | F3H                | flavonoid_pathway           | 0             | 2ODD15             | F3H                  | flavonoid_pathway             | Arabidopsis thaliana |
-| XP_019283746.1_unknown_Oryza_sativa__4530           |                      |                    |                             | 1             | 2ODD19             | COD                  | benzylisoquinoline_biosynthesis | Oryza sativa         |
+| XM_002873456.1_F3H_Arabidopsis_thaliana__3702       | 2ODD13               | F3H                | flavonoid_pathway           | 0             | 2ODD13             | F3H                  | flavonoid_pathway             | Arabidopsis thaliana |
+| XP_019283746.1_unknown_Oryza_sativa__4530           |                      |                    |                             | 1             | 2ODD09             | M2H                  | melatonin_catabolism | Oryza sativa         |
 | lcl_contig00042_12345_predicted_protein__3702       |                      |                    |                             | 2             | candidates_only    |                      |                               | Arabidopsis thaliana |
 
 Columns:
