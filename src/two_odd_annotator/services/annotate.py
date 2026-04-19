@@ -8,7 +8,9 @@ import pandas as pd
 from collections import Counter
 
 import re
-from typing import Literal
+from typing import Callable, Literal
+
+from two_odd_annotator.utils.logging import LOG_FILENAME, log_line
 
 from two_odd_annotator.utils.msa import run_mafft, trim_msa_by_gap_fraction
 from two_odd_annotator.utils.phylo import run_fasttree
@@ -381,13 +383,19 @@ def assign_plant_group_props(tree: Tree | PhyloTree):
         )
 
 
-def build_distance_lookup(tree):
+def build_distance_lookup(tree: Tree | PhyloTree, max_leaves: int | None = 5000):
     """
     Build a nested dictionary for pairwise distances between leaves in the tree.
 
     e.g. dist_dict[seqA][seqB] = distance
     """
     leaves = list(tree.leaves())
+    if max_leaves is not None and len(leaves) > max_leaves:
+        raise ValueError(
+            "build_distance_lookup would create an N×N matrix, which is infeasible at this size. "
+            f"Got {len(leaves)} leaves (would be ~{len(leaves) ** 2:,} distances). "
+            "Either set max_leaves=None to force (not recommended), or skip the full lookup and compute distances on-demand."
+        )
     names = [leaf.name for leaf in leaves]
 
     dm = tree.distance_matrix(squared=True)
@@ -412,7 +420,9 @@ def get_root_id(two_odd_id: str, parent_map: dict[str, str]) -> str:
 
 
 def get_clusters(
-    t: Tree | PhyloTree, dist_dict: dict[str, dict[str, float]] = None,
+    t: Tree | PhyloTree,
+    dist_dict: dict[str, dict[str, float]] | None = None,
+    dist_func: Callable[[str, str], float] | None = None,
     parent_map: dict[str, str] = PARENT_DICT,
 ) -> list[list[Tree | PhyloTree]]:
     """
@@ -420,6 +430,13 @@ def get_clusters(
     treating 'candidate' as transparent (ignored for identity, included in clusters).
 
     All leaves under a valid 2ODD clade are included, including edge candidates.
+
+    Notes
+    -----
+    For nested 2ODD clades, candidates are assigned to the closest nested cluster
+    vs the parent cluster using distances. Provide either:
+    - dist_dict: full pairwise distance lookup (small trees), OR
+    - dist_func: callable (a_name: str, b_name: str) -> float, computed on-demand (large trees)
     """
 
     def same_parent_only(child_ids: set[str]) -> bool:
@@ -557,20 +574,26 @@ def get_clusters(
                     nested_clusters.append(nested_leaves)
 
             # --- resolve candidates ---
-            # assign candidates to the closest nested cluster if distance dict is provided, otherwise assign to main cluster
-            if dist_dict is not None and candidate_leaves:
+            # assign candidates to the closest nested cluster if distances are available
+            if candidate_leaves and (dist_dict is not None or dist_func is not None):
+
+                def _dist(a: str, b: str) -> float:
+                    if dist_dict is not None:
+                        return float(dist_dict[a][b])
+                    return float(dist_func(a, b))
+
                 for candidate in candidate_leaves:
                     best_dist = float("inf")
                     best_nested_cluster_idx = None
 
                     for idx, nested_cluster in enumerate(nested_clusters):
                         for nested_leaf in nested_cluster:
-                            dist = dist_dict[candidate.name][nested_leaf.name]
+                            dist = _dist(candidate.name, nested_leaf.name)
                             if dist < best_dist:
                                 best_dist = dist
                                 best_nested_cluster_idx = idx
                     for two_odd_id_leaf in two_odd_id_leaves:
-                        dist = dist_dict[candidate.name][two_odd_id_leaf.name]
+                        dist = _dist(candidate.name, two_odd_id_leaf.name)
                         if dist < best_dist:
                             best_dist = dist
                             best_nested_cluster_idx = None  # assign to main cluster
@@ -609,6 +632,13 @@ def get_clusters(
 
 
 def compute_cluster_neighbors(clusters, dist_dict):
+    # If we do not have a distance lookup (e.g., large trees), return placeholders.
+    if dist_dict is None:
+        return {
+            f"{i}": {"closest_cluster": -1, "distance": None}
+            for i in range(len(clusters))
+        }
+
     neighbors = {}
 
     for i, cluster_a in enumerate(clusters):
@@ -630,7 +660,13 @@ def compute_cluster_neighbors(clusters, dist_dict):
                 best_dist = min_dist
                 best_j = j
 
-        neighbors[f"{i}"] = {"closest_cluster": best_j, "distance": round(best_dist, 3)}
+        if best_j is None or best_dist == float("inf"):
+            neighbors[f"{i}"] = {"closest_cluster": -1, "distance": None}
+        else:
+            neighbors[f"{i}"] = {
+                "closest_cluster": best_j,
+                "distance": round(best_dist, 3),
+            }
 
     return neighbors
 
@@ -819,7 +855,11 @@ def clusters_meta_to_df(
 
 
 def get_candidate_to_char_baits_df(
-    candidate_headers, ingroup_headers, dist_dict, seq_id_to_idx_dict
+    candidate_headers,
+    ingroup_headers,
+    dist_dict,
+    seq_id_to_idx_dict,
+    tree: Tree | PhyloTree | None = None,
 ):
     """
     Assign each candidate sequence to its closest characterized bait sequences.
@@ -844,18 +884,33 @@ def get_candidate_to_char_baits_df(
     # get characterized baits
     char_baits = [h for h in ingroup_headers if is_char_bait_sequence(h)]
 
+    if dist_dict is None:
+        if tree is None:
+            raise ValueError(
+                "dist_dict is None but no tree was provided to compute distances on-demand."
+            )
+        leaf_by_name = {leaf.name: leaf for leaf in tree.leaves()}
+
+        def _dist(a: str, b: str) -> float:
+            return float(tree.get_distance(leaf_by_name[a], leaf_by_name[b]))
+
+    else:
+
+        def _dist(a: str, b: str) -> float:
+            return float(dist_dict[a][b])
+
     candidate_char_baits_dict = {}
     for candidate in candidate_headers:
         # sort closest baits by distance
-        closest_char_baits = sorted(
-            char_baits, key=lambda bait: dist_dict[candidate][bait]
-        )[:3]
+        bait_distances = [(_dist(candidate, bait), bait) for bait in char_baits]
+        bait_distances.sort(key=lambda x: x[0])
+        closest_char_baits = [b for _, b in bait_distances[:3]]
 
         candidate_char_baits_dict[candidate] = {
             "cluster_idx": seq_id_to_idx_dict.get(candidate, None),
             "closest_char_bait": closest_char_baits[0] if closest_char_baits else None,
             "closest_char_bait_dist": (
-                dist_dict[candidate][closest_char_baits[0]]
+                _dist(candidate, closest_char_baits[0])
                 if closest_char_baits
                 else None
             ),
@@ -863,7 +918,7 @@ def get_candidate_to_char_baits_df(
                 closest_char_baits[1] if len(closest_char_baits) > 1 else None
             ),
             "second_closest_char_bait_dist": (
-                dist_dict[candidate][closest_char_baits[1]]
+                _dist(candidate, closest_char_baits[1])
                 if len(closest_char_baits) > 1
                 else None
             ),
@@ -998,8 +1053,11 @@ def run(
     completed_annotation_steps: dict | None = None,
 ):
 
+    log_path = str(result_dir / LOG_FILENAME)
+    log_line(log_path, "[ANNOTATE] Starting annotation service")
+
     annotation_fasta_path = result_dir / ANNOTATION_FASTA
-    ingroup_2ODD_fasta = config["annotate"]["bait_sequence_collection"]
+    ingroup_2ODD_fasta = Path(config["annotate"]["bait_sequence_collection"])
     major_minor_2ODD_dict = json.load(open(config["annotate"]["major_minor_2ODD_ids"]))
     major_char_2ODD_info_dict = json.load(
         open(config["annotate"]["major_2ODDs_functional_characterization"])
@@ -1011,28 +1069,61 @@ def run(
     reuse_existing = config["pipeline"].get("reuse_existing", False)
     threads = int(config.get("parameters", {}).get("threads", 1))
 
+    # ignore already completed steps if not reusing existing results
     if not reuse_existing:
         completed_annotation_steps = (
-            None  # ignore already completed steps if not reusing existing results
+            None  
         )
 
     # ========== FROM FASTA TO NWK ==========
+
+    candidate_headers: set[str] | None = None
+    ingroup_headers: set[str] | None = None
 
     if (
         completed_annotation_steps is None
         or not completed_annotation_steps["annotation_fasta"]
     ):
+        log_line(log_path, "[ANNOTATE] Building annotation FASTA")
         candidate_headers, ingroup_headers = create_annotation_fasta(
             results_dir=result_dir,
             ingroup_2ODD_fasta=ingroup_2ODD_fasta,
             output_fasta=annotation_fasta_path,
             seq_sim_method=seq_sim_method,
         )
+    else:
+
+        if not annotation_fasta_path.exists():
+            candidate_headers, ingroup_headers = create_annotation_fasta(
+                results_dir=result_dir,
+                ingroup_2ODD_fasta=ingroup_2ODD_fasta,
+                output_fasta=annotation_fasta_path,
+                seq_sim_method=seq_sim_method,
+            )
+        # When reusing existing results, the annotation fasta already exists but we
+        # still need the candidate/ingroup ID sets downstream.
+        else:
+            annotation_ids = {rec.id for rec in SeqIO.parse(annotation_fasta_path, "fasta")}
+            ingroup_ids = {rec.id for rec in SeqIO.parse(ingroup_2ODD_fasta, "fasta")}
+            ingroup_headers = annotation_ids & ingroup_ids
+            candidate_headers = annotation_ids - ingroup_headers
+
+    log_line(
+        log_path,
+        f"[ANNOTATE] FASTA IDs: {len(candidate_headers)} candidates + {len(ingroup_headers)} ingroup",
+    )
+
+    # should always be set by one of the paths above
+    if candidate_headers is None or ingroup_headers is None:
+        raise RuntimeError(
+            "Internal error: candidate_headers/ingroup_headers not initialized in annotate.run"
+        )
 
     if (
         completed_annotation_steps is None
         or not completed_annotation_steps["annotation_tree"]
     ):
+        log_line(log_path, "[ANNOTATE] Building/reading MSA + tree")
         completed_msa = (
             completed_annotation_steps.get("annotation_msa")
             if completed_annotation_steps
@@ -1059,8 +1150,11 @@ def run(
             completed_msa_trim=completed_msa_trim,
             completed_tree=completed_tree,
         )
+    else:
+        log_line(log_path, "[ANNOTATE] Reusing existing tree")
 
     # load tree
+    log_line(log_path, "[ANNOTATE] Loading tree + annotating taxonomy")
     tree = PhyloTree(
         open(annotation_tree_path), sp_naming_function=lambda name: name.split("__")[-1]
     )
@@ -1070,6 +1164,7 @@ def run(
         tree.write(outfile=str(result_dir / ANNOTATION_TREE))
 
     # ========== ANNOTATE TREE WITH 2ODD IDS AND PLANT GROUPS ==========
+    log_line(log_path, "[ANNOTATE] Assigning 2ODD + plant group props")
     ingroup_seq_to_2ODD_id = reverse_major_minor_2ODD_dict(major_minor_2ODD_dict)
     assign_plant_group_props(tree)
     assign_2ODD_props(
@@ -1084,8 +1179,35 @@ def run(
     # representing the clusters of sequences in the tree,
     # their assigned 2ODD ID, the percentage of ingroup 2ODDs in the cluster,
     # and the plant groups represented in the cluster
-    dist_dict = build_distance_lookup(tree)
-    clusters = get_clusters(tree, dist_dict=dist_dict)
+    log_line(log_path, "[ANNOTATE] Clustering tree")
+    max_leaves = int(config.get("annotate", {}).get("max_distance_matrix_leaves", 5000))
+    try:
+        dist_dict = build_distance_lookup(tree, max_leaves=max_leaves)
+        log_line(log_path, f"[ANNOTATE] Built full distance matrix for {len(list(tree.leaves()))} leaves")
+    except ValueError as e:
+        dist_dict = None
+        log_line(log_path, f"[ANNOTATE] Skipping full distance matrix: {e}")
+
+    dist_func = None
+    if dist_dict is None:
+        leaf_by_name = {leaf.name: leaf for leaf in tree.leaves()}
+        dist_cache: dict[tuple[str, str], float] = {}
+
+        def dist_func(a: str, b: str) -> float:
+            key = (a, b) if a <= b else (b, a)
+            cached = dist_cache.get(key)
+            if cached is not None:
+                return cached
+            d = float(tree.get_distance(leaf_by_name[a], leaf_by_name[b]))
+            dist_cache[key] = d
+            return d
+
+        log_line(
+            log_path,
+            "[ANNOTATE] Using on-demand cached distances for nested-candidate resolution",
+        )
+
+    clusters = get_clusters(tree, dist_dict=dist_dict, dist_func=dist_func)
     neighboring_clusters = compute_cluster_neighbors(clusters, dist_dict)
     meta_info = cluster_meta_info(
         clusters=clusters,
@@ -1096,6 +1218,7 @@ def run(
     cluster_df = clusters_meta_to_df(meta_info, neighboring_clusters)
 
     # Save cluster-level results for user inspection
+    log_line(log_path, "[ANNOTATE] Writing cluster table")
     cluster_df.to_csv(result_dir / CLUSTER_CSV, index=False, sep="\t")
 
     # 2ODD_info_df:
@@ -1119,6 +1242,7 @@ def run(
         ingroup_headers=ingroup_headers,
         dist_dict=dist_dict,
         seq_id_to_idx_dict=seq_id_to_idx,
+        tree=tree,
     )
 
     # create left join of candidate_char_baits_df with two_odd_info_df and cluster_df to get a full picture of each candidate's assigned cluster, 
@@ -1158,6 +1282,8 @@ def run(
     annotation_df[final_cols].to_csv(
         result_dir / ANNOTATION_CSV, index=False, sep="\t"
     )
+
+    log_line(log_path, "[ANNOTATE] Completed annotation service")
 
     return annotation_df
 

@@ -1,6 +1,8 @@
 #%%
 import json
 
+import pytest
+
 import pandas as pd
 from pathlib import Path
 from ete4 import PhyloTree
@@ -31,6 +33,75 @@ from two_odd_annotator.services.annotate import (
     cluster_meta_info,
     get_candidate_to_char_baits_df
 )
+
+
+def test_run_reuse_existing_derives_candidate_headers(tmp_path, monkeypatch):
+    """Regression test for reruns with reuse_existing=True.
+
+    When `completed_annotation_steps["annotation_fasta"]` is True, `run()` skips
+    `create_annotation_fasta()`. It should still derive candidate/ingroup IDs from
+    the existing annotation FASTA so downstream steps can proceed.
+    """
+
+    from two_odd_annotator.services import annotate as annotate_module
+
+    class DummyPhyloTree:
+        def __init__(self, _fh, sp_naming_function=None):
+            self.sp_naming_function = sp_naming_function
+
+        def annotate_ncbi_taxa(self, taxid_attr="species"):
+            return {}, {}, {}
+
+        def ladderize(self):
+            return None
+
+        def write(self, outfile=None, **kwargs):
+            return None
+
+    # Minimal ingroup + annotation FASTA
+    ingroup_fasta = tmp_path / "ingroup.fasta"
+    ingroup_fasta.write_text(">ING1\nMA\n")
+
+    (tmp_path / ANNOTATION_FASTA).write_text(">ING1\nMA\n>CAND1\nMA\n")
+    (tmp_path / ANNOTATION_TREE).write_text("(ING1:0.1,CAND1:0.1);\n")
+
+    test_config = {
+        "annotate": {
+            "bait_sequence_collection": ingroup_fasta,
+            "major_minor_2ODD_ids": major_minor_2ODDs_path,
+            "major_2ODDs_functional_characterization": Path(__file__).parents[1]
+            / "config"
+            / "major_2ODD_char_info.json",
+        },
+        "pipeline": {"reuse_existing": True},
+        "parameters": {"threads": 1},
+    }
+
+    completed_steps = {
+        "annotation_fasta": True,
+        "annotation_msa": True,
+        "annotation_msa_trim": True,
+        "annotation_tree": True,
+    }
+
+    captured: dict[str, set[str]] = {}
+
+    def fake_assign_2ODD_props(tree, seq_to_2ODD_id, candidate_headers):
+        captured["candidate_headers"] = set(candidate_headers)
+        raise RuntimeError("STOP_AFTER_HEADERS")
+
+    monkeypatch.setattr(annotate_module, "PhyloTree", DummyPhyloTree)
+    monkeypatch.setattr(annotate_module, "assign_plant_group_props", lambda tree: None)
+    monkeypatch.setattr(annotate_module, "assign_2ODD_props", fake_assign_2ODD_props)
+
+    with pytest.raises(RuntimeError, match="STOP_AFTER_HEADERS"):
+        annotate_module.run(
+            result_dir=tmp_path,
+            config=test_config,
+            completed_annotation_steps=completed_steps,
+        )
+
+    assert captured["candidate_headers"] == {"CAND1"}
 
 
 RESULTS_DIR = Path(__file__).parents[1] /  ".results" 
