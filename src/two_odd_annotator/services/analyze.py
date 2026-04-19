@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from collections import Counter
 import json
 import re
 
@@ -96,6 +97,45 @@ def _two_odd_xtick_labels(
 ) -> list[str]:
     """Build display labels for 2ODD IDs with associated functions."""
 
+    def _mathtext_escape(s: str) -> str:
+        # Escape characters that are special in matplotlib mathtext.
+        # Underscore is common in function names (e.g. "M2H_weak").
+        return (
+            str(s)
+            .replace("\\", r"\backslash ")
+            .replace("{", r"\{")
+            .replace("}", r"\}")
+            .replace("_", r"\_")
+            .replace("^", r"\^{}")
+        )
+
+    def _consensus_function(info: dict[str, Any], threshold: float = 0.9, min_size: int = 2) -> str | None:
+        """Return a consensus function from characterized baits, or None.
+
+        Mirrors the logic in services/annotate.py:add_consensus_annotations.
+        """
+
+        ids = info.get("associated_characterized_baits") if isinstance(info, dict) else None
+        if not isinstance(ids, list) or not ids:
+            return None
+
+        functions: list[str] = []
+        for seq_id in ids:
+            if not isinstance(seq_id, str) or "__" not in seq_id:
+                continue
+            parts = seq_id.split("__")
+            if len(parts) > 1 and str(parts[1]).strip():
+                functions.append(str(parts[1]).strip())
+
+        if len(functions) < min_size:
+            return None
+
+        counts = Counter(functions)
+        most_common, count = counts.most_common(1)[0]
+        if (count / len(functions)) >= float(threshold):
+            return str(most_common)
+        return None
+
     if not major_char_info:
         return list(two_odd_ids)
 
@@ -108,8 +148,25 @@ def _two_odd_xtick_labels(
         else:
             funcs = []
 
+        consensus = _consensus_function(info)
+
         if funcs:
-            labels.append(f"({','.join(funcs)}) {tid}")
+            # If there's a strong consensus among characterized baits, bold ONLY
+            # that function within the (funcs) label.
+            if consensus and consensus in funcs:
+                funcs_math: list[str] = []
+                for f in funcs:
+                    f_esc = _mathtext_escape(f)
+                    if f == consensus:
+                        funcs_math.append(r"\mathbf{" + f_esc + "}")
+                    else:
+                        funcs_math.append(r"\mathrm{" + f_esc + "}")
+
+                tid_esc = _mathtext_escape(tid)
+                label = "$({})\\ \\mathrm{{{}}}$".format(",\\ ".join(funcs_math), tid_esc)
+                labels.append(label)
+            else:
+                labels.append(f"({','.join(funcs)}) {tid}")
         else:
             labels.append(tid)
     return labels
@@ -590,11 +647,21 @@ def run(output_dir: Path, config: dict[str, Any]) -> None:
             )
 
     if is_species_rank:
-        title = "2ODD presence by taxonomic species level\nx: (assoc. functions) 2ODD ID"
-    else:
         title = (
-            f"2ODD percentage presence by taxonomic {rank} level\n"
-            "row (N)=#species; x: (assoc. functions) 2ODD ID"
+            "2ODD presence across plant species\n"
+            f"y: plant species\n"
+            "x: (assoc. functions) 2ODD ID; bold=function consensus among characterized baits (≥90%, n≥2)"
+        )
+    else:
+        if rank == "family":
+            rank_display = "families"
+        elif rank == "order":
+            rank_display = "orders"
+        elif rank == "genus":
+            rank_display = "genera"
+        title = (
+            f"2ODD percentage presence across plant {rank_display}\n"
+            f"y: plant {rank} (#species)\nx: (assoc. functions) 2ODD ID; bold=function consensus among characterized baits (≥90%, n≥2)"
         )
     ax_heat.set_title(title)
 

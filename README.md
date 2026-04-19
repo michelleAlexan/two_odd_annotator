@@ -504,9 +504,24 @@ Here is an example output of applying the `two_odd_annotator` on over 300 plant 
 <img src="images/presence_heatmap_order.png" alt="2ODD percentage presence by taxonomic order level" width="900"/>
 </p>
 
+#### How to interpret the heatmap
+
+The plot combines a taxonomy tree (left) with a presence/percentage heatmap (right):
+
+- **Rows (y-axis)** are taxa at the chosen rank (`order`, `family`, `genus`, or `species`). If the order is at higher ranks than on species level, then the number in the parenthesis indicates how many species datasets were included for this run. Label colors (and the legend) indicate the corresponding major plant groups (Algae, Ferns, Monocots, Dicots, etc.).
+- **Columns (x-axis)** are **major 2ODD IDs** (minor IDs are excluded from the matrix/heatmap).
+- **x-tick labels** are formatted as `(<associated functions>) <2ODD ID>` using the curated characterization file [data/2ODDs/major_2ODD_char_info.json](data/2ODDs/major_2ODD_char_info.json).
+  - If a 2ODD ID has a strong function consensus among its characterized baits (≥90% agreement with at least 2 baits), **only that consensus function is shown in bold**.
+  - If there is no clear consensus (or no characterized baits), functions are shown without bolding.
+- **Cell values / colors**
+  - At rank = `species`, cells are binary: **1** = that species has at least one candidate assigned to the 2ODD ID; **0** = not observed.
+  - At higher ranks, cells are percentages: the **% of species within that row taxon** with at least one candidate assigned to the 2ODD ID.
+
+In other words, the heatmap answers “how common is each 2ODD clade across taxa?”, while the bolded x-label function (when present) indicates the *expected* function of that 2ODD ID based on characterized bait sequences.
 
 
-This visualization allows us to identify patterns of conservation and diversification of 2ODD functional clades across plant taxa. For example, some 2ODD IDs might be widely conserved across all orders, while others might show a more patchy distribution, potentially indicating lineage-specific expansions or losses.
+
+This visualization allows identifying patterns of conservation and diversification of 2ODD functional clades across plant taxa. For example, some 2ODD IDs might be widely conserved across all orders, while others might show a more patchy distribution, potentially indicating lineage-specific expansions or losses.
 
 
 It is important to note that for the analysis, not only the input plant species are considered, but also the species represented in the bait sequence collection. This is why the presence matrix and corresponding tree and heatmap can contain more species than the number of input FASTA files. 
