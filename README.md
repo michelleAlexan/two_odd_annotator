@@ -45,7 +45,7 @@ From this expanded set of ~14,000 sequences, a phylogenetic tree was constructed
 
 <p align="center">
 <img src="images/2ODDs_14K_tree.png" alt="drawing" width="900"/>
-<figcaption>Figure 1 The phylogenetic tree of ~14,000 2ODD sequences from over 200 plant species. Each well-supported functional clade was assign an unique 2ODD ID, small clades were classified as "minor_2ODD_clusters". Clades containing at least two characterized sequences with the same function and/or metabolic pathway are annotated with the function (black) and the corresponding metabolic pathway (light grey). </figcaption>
+<figcaption>Figure 1 The phylogenetic tree of ~14,000 2ODD sequences from over 200 plant species. Each well-supported functional clade was assign an unique 2ODD ID, small clades were classified as "minor_2ODD_clusters". Clades containing at least two characterized sequences with the same function and/or metabolic pathway are annotated with the function (black) and the corresponding metabolic pathway (light grey). The tree was created and visualized using ETE4 and edited in Inkscape.</figcaption>
 </p>
 
 The mapping of all 14,000 sequences to their assigned 2ODD ID is available in [major_minor_2ODD_ids_manual.json](data/2ODDs/major_minor_2ODD_ids_manual.json). The information on which characterized sequences are represented in which 2ODD ID is available in [major_2ODD_char_info.json](data/2ODDs/major_2ODD_char_info.json).
@@ -381,6 +381,8 @@ Similarly, the HMMER method relies on a 2ODD domain HMM profile, and hits are fi
 
 The phylogeny-based annotation workflow is implemented in  
 `src/two_odd_annotator/services/annotate.py`.
+
+Here, I want to acknowledge the ETE4 library, which laid the foundation for the tree-based annotation approach implemented in this service. The integrated manipulation and annotation capabilities saved a lot of work in enabling this annotation service. 
 
 At a high level, the procedure builds a combined reference–candidate tree and assigns functions to candidate sequences based on their phylogenetic placement relative to curated 2ODD clades.
 
