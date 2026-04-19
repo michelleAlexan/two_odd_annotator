@@ -137,6 +137,7 @@ def test__fetch_completed_pipeline_steps_for_subdir_no_steps_completed(tmp_path)
         "Zea_mays": {
             "seq_sim_filter": None,
             "annotate": None,
+            "analyze": None,
             "visualize": None
         }
     }
@@ -177,11 +178,13 @@ def test__fetch_completed_pipeline_steps_for_subdir_only_single_subdir_completed
         "Zea_mays": {
             "seq_sim_filter": ["diamond"],
             "annotate": None,
+            "analyze": None,
             "visualize": None
         },
         "Solanum_tuberosum": {
             "seq_sim_filter": None,
             "annotate": None,
+            "analyze": None,
             "visualize": None
         }
     }   

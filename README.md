@@ -26,7 +26,7 @@ The `two_odd_annotator` is a Python bioinformatics tool that lets you find putat
   - [Pipeline orchestration](#pipeline-orchestration)
   - [Sequence-similarity filtering](#sequence-similarity-filtering)
   - [Annotation](#annotation)
-  - [Visualization](#visualization)
+  - [Analysis](#analysis)
 
 ## Overview
 
@@ -83,7 +83,7 @@ Detailed speaking, the data flow of the pipeline is as follows (see Figure 3):
     - a phylogenetic tree is inferred from the trimmed MSA using FastTree.
     - the tree is processed with `ete4` to assign properties to each leaf (e.g. 2ODD ID, plant group) and to identify monophyletic clusters of sequences based on shared 2ODD IDs.
     - finally, candidate sequences are annotated based on their monophyletic cluster membership and their phylogenetic proximity to characterized bait sequences.
-5. Additionally, a visualization of the 2ODD ID distribution accross different plant taxa is saved as a heatmap.
+5. Optionally, an analysis summary of the 2ODD ID distribution across plant taxa can be generated as a tree + heatmap.
 
 
 
@@ -205,8 +205,8 @@ annotate:
   major_minor_2ODD_ids: "data/2ODDs/major_minor_2ODD_ids_manual.json"
   save_tree: true # whether to save the annotated tree as a Newick file with cluster annotations in the node labels
 
-visualize: 
-  save_plots: true # whether to generate visualizations phylogenetic tree and heatmap showing the distribution of 2ODD candidates across taxa
+analyze: 
+  save_plots: true # whether to generate analysis plots (phylogenetic tree + heatmap) showing the distribution of 2ODD candidates across taxa
   heatmap_taxa_rank: "family" # can be "order", "family", "genus", or "species" 
 ```
 
@@ -474,11 +474,39 @@ The final result is a **candidate-level annotation table**, where each row conta
 
 
 
-### Visualization 
+### Analysis
 
-Visualization utilities are planned but not yet part of this package.
+The pipeline can generate a **taxonomically ordered presence matrix** and summary plots showing how 2ODD functional clades (major 2ODD IDs) are distributed across taxa (taxonomic ranks can be order, family, genus or species).
+
+Run analysis explicitly:
+
+```bash
+annodd \
+  -i data/example_input_folder \
+  -o example_run \
+  --step analyze \
+  --rank order
+```
+
+You can also run it automatically at the end of a full run by setting `pipeline.compute_plots: true` in your config.
+
+Outputs (written to the run output directory):
+
+- `presence_matrix_<rank>.tsv` (filtered matrix; major 2ODD IDs only)
+- `presence_tree_<rank>.nwk`
+- `presence_heatmap_<rank>.png`
+
+Here is an example output of applying the `two_odd_annotator` on over 300 plant species datasets. The heatmap shows the percentage presence of each major 2ODD ID (columns) across plant orders (rows). The presence is calculated as the fraction of species within that order that have at least one candidate sequence annotated with that 2ODD ID:
+
+<p align="center">
+<img src="images/presence_heatmap_order.png" alt="2ODD percentage presence by taxonomic order level" width="900"/>
+</p>
+
+
+
+This visualization allows us to identify patterns of conservation and diversification of 2ODD functional clades across plant taxa. For example, some 2ODD IDs might be widely conserved across all orders, while others might show a more patchy distribution, potentially indicating lineage-specific expansions or losses.
+
+
+It is important to note that for the analysis, not only the input plant species are considered, but also the species represented in the bait sequence collection. This is why the presence matrix and corresponding tree and heatmap can contain more species than the number of input FASTA files. 
 
 ---
-
-
-

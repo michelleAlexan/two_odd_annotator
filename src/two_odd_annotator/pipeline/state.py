@@ -88,6 +88,10 @@ class State:
             "plot_3": False,
         }
 
+        # Backwards-compatible alias (the step was renamed from "visualize" to
+        # "analyze" but these are not currently used elsewhere).
+        self.analysis_steps_completed = self.visualization_steps_completed
+
         # store metadata for each species,
         #  including inferred scientific name, tax id, original input file path, and any other relevant info
         self.metadata = None
@@ -181,6 +185,7 @@ class State:
             # currently not tracked per-subdir but kept for API compatibility
             "seq_sim_filter": None,
             "annotate": None,
+            "analyze": None,
             "visualize": None,
         }
 
@@ -403,6 +408,7 @@ class State:
                     subdir_folder_name: {
                         "seq_sim_filter": None,
                         "annotate": None,
+                        "analyze": None,
                         "visualize": None,
                     }
                 }

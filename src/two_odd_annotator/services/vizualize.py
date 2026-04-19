@@ -1,16 +1,11 @@
-from pathlib import Path
-from typing import Any
+"""Backwards-compatible shim.
 
+The analysis step used to be implemented in this module (and historically had a
+"vizualize" filename). The implementation has been renamed to
+`two_odd_annotator.services.analyze`.
+"""
 
-def run(output_dir: Path, config: dict[str, Any]) -> None:
-    """Placeholder visualization step.
-
-    This function exists so that the ``visualize`` pipeline step can be
-    invoked from the CLI without raising an AttributeError. The actual
-    plotting/visualization logic can be implemented here in the future.
-    """
-
-    print(f"Visualization step is not implemented yet. Output dir: {output_dir}")
+from two_odd_annotator.services.analyze import *  # noqa: F401,F403
 
 
 

@@ -32,6 +32,40 @@ def test_cli_threads_forwarded_to_runner(monkeypatch, tmp_path):
     assert captured.get("threads") == 7
 
 
+def test_cli_visualization_alias_and_rank_forwarded(monkeypatch, tmp_path):
+    import two_odd_annotator.cli as cli
+
+    captured = {}
+
+    class DummyRunner:
+        def __init__(self, *args, **kwargs):
+            captured.update(kwargs)
+
+        def run(self):
+            return None
+
+    monkeypatch.setattr(cli, "Runner", DummyRunner)
+
+    out_dir = tmp_path / "out"
+    argv = [
+        "annodd",
+        "-i",
+        str(tmp_path),
+        "-o",
+        str(out_dir),
+        "--step",
+        "visualization",
+        "--rank",
+        "order",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli.main()
+
+    assert captured.get("step") == "analyze"
+    assert captured.get("viz_rank") == "order"
+
+
 def test_runner_threads_override_config(tmp_path):
     from pathlib import Path
 

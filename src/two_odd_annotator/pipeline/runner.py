@@ -5,7 +5,7 @@ from two_odd_annotator.constants import DEFAULT_CONFIG_PATH
 from two_odd_annotator.utils import io
 from two_odd_annotator.utils.logging import init_log, log_line
 from two_odd_annotator.pipeline import state
-from two_odd_annotator.services import seq_sim_filter, annotate, vizualize
+from two_odd_annotator.services import seq_sim_filter, annotate, analyze
 
 from two_odd_annotator.constants import (
     ANNOTATION_FASTA,
@@ -38,6 +38,7 @@ class Runner:
         seq_len_thresh: str | None = None,
         delete_intermediate_files: bool | None = None,
         step: str | None = None,
+        viz_rank: str | None = None,
     ):
         self.input_path = Path(input_path)
         self.output_base_dir = Path(output_base_dir)
@@ -73,12 +74,21 @@ class Runner:
                 "delete_intermediate_files"
             ] = delete_intermediate_files
 
+        if viz_rank is not None:
+            # Prefer new key; set legacy key too for compatibility.
+            self.config.setdefault("analyze", {})
+            self.config["analyze"]["heatmap_taxa_rank"] = str(viz_rank)
+            self.config.setdefault("visualize", {})
+            self.config["visualize"]["heatmap_taxa_rank"] = str(viz_rank)
+
         # which part of the pipeline to run
         # "all" (default) runs the full pipeline; otherwise one of
-        # "filter_seq_sim", "annotate", or "visualize"
+        # "filter_seq_sim", "annotate", or "analyze"
         self.step = step or "all"
+        if self.step in {"visualize", "visualization"}:
+            self.step = "analyze"
 
-        valid_steps = {"all", "filter_seq_sim", "annotate", "visualize"}
+        valid_steps = {"all", "filter_seq_sim", "annotate", "analyze"}
         if self.step not in valid_steps:
             raise ValueError(
                 f"Invalid step: {self.step!r}. Expected one of {sorted(valid_steps)}."
@@ -178,7 +188,7 @@ class Runner:
         Steps:
         1. Sequence similarity filtering (HMMER, Diamond, or BLASTP)
         2. 2ODD annotation (based on phylogenetic evidence)
-        3. Visualization of results"""
+        3. Analysis (summary plots)"""
 
         start = timeit.default_timer()
 
@@ -233,17 +243,23 @@ class Runner:
                     completed_annotation_steps=self.state.annotation_steps_completed,
                 )
 
-        # 3) visualization (optional / placeholder for now)
-        if self.step in ("all", "visualize"):
-            log_line(self.log_path, "====== VISUALIZATION ======")
-            if self.config["pipeline"].get("compute_plots"):
-                if hasattr(vizualize, "run"):
-                    log_line(self.log_path, "Running visualization service.")
-                    vizualize.run(self.state.output_base_dir, self.config)
-                else:
-                    log_line(
-                        self.log_path, "Visualization step is not implemented yet."
-                    )
+        # 3) analysis (optional)
+        if self.step in ("all", "analyze"):
+            log_line(self.log_path, "====== ANALYSIS ======")
+            should_run = (self.step == "analyze") or bool(
+                self.config["pipeline"].get("compute_plots")
+            )
+
+            if not should_run:
+                log_line(
+                    self.log_path,
+                    "Analysis skipped because pipeline.compute_plots is false (set --compute-plots true or use --step analyze).",
+                )
+            elif hasattr(analyze, "run"):
+                log_line(self.log_path, "Running analysis service.")
+                analyze.run(self.state.output_base_dir, self.config)
+            else:
+                log_line(self.log_path, "Analysis step is not implemented yet.")
 
         elapsed = (timeit.default_timer() - start) / 60
 

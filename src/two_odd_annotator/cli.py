@@ -54,9 +54,14 @@ def main():
 
     parser.add_argument(
         "--step",
-        choices=["all", "filter_seq_sim", "annotate", "visualize"],
         default="all",
-        help="Which pipeline step to run. Default is 'all' for the full pipeline; choose 'filter_seq_sim', 'annotate', or 'visualize' to run individual steps.",
+        help="Which pipeline step to run. Default is 'all' for the full pipeline; choose 'filter_seq_sim', 'annotate', or 'analyze' to run individual steps.",
+    )
+
+    parser.add_argument(
+        "--rank",
+        choices=["species", "genus", "family", "order"],
+        help="Override analysis rank (used by --step analyze/visualize/visualization).",
     )
 
     parser.add_argument(
@@ -92,6 +97,16 @@ def main():
 
     args = parser.parse_args()
 
+    # normalize aliases
+    step = args.step
+    if step in {"visualize", "visualization"}:
+        step = "analyze"
+
+    valid_steps = {"all", "filter_seq_sim", "annotate", "analyze"}
+    if step not in valid_steps:
+        parser.error(
+            f"Invalid --step: {args.step!r}. Expected one of {sorted(valid_steps)}."
+        )
 
     # Initialize pipeline
     pipeline = Runner(
@@ -113,7 +128,8 @@ def main():
             if args.delete_intermediate_files
             else None
         ),
-        step=args.step,
+        step=step,
+        viz_rank=args.rank,
     )
 
     pipeline.run()
